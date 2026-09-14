@@ -1,0 +1,73 @@
+# finance-backend
+
+Modular monolith for the Finance mobile app. Java 21 · Spring Boot 4.1 · Spring Modulith · PostgreSQL · Redis · RabbitMQ.
+
+The architecture is locked in [`ARCHITECTURE.md`](../ARCHITECTURE.md) (repo-level). This README is the how-to.
+
+## Run locally
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d     # postgres, redis, rabbitmq
+./gradlew bootRun                                      # http://localhost:8080
+```
+
+- Health: `GET /actuator/health` · Modulith: `GET /actuator/modulith`
+- API contract & Swagger UI: `GET /openapi.yaml`, `GET /swagger-ui.html`
+- RabbitMQ UI: http://localhost:15672 (finance / finance)
+
+Try it:
+
+```bash
+KEY=$(uuidgen)
+curl -s -X POST localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -H "Idempotency-Key: $KEY" \
+  -d '{"email":"alice@example.com","password":"correct horse battery","displayName":"Alice",
+       "device":{"deviceId":"dev-00000001","deviceName":"Pixel 9","platform":"ANDROID"}}'
+```
+
+Requires a JDK 21 (auto-provisioned by the Gradle toolchain if missing) and Docker for integration tests.
+
+## Build & test
+
+| Command | What runs |
+|---|---|
+| `./gradlew test` | Unit tests + **architecture tests** (ArchUnit rules, Modulith verify). No infra needed. |
+| `./gradlew integrationTest` | Spring context + Testcontainers (Postgres, RabbitMQ, Redis). Needs Docker. |
+| `./gradlew build` | Everything above + `spotlessCheck` + boot jar. |
+| `./gradlew spotlessApply` | Format (google-java-format). |
+| `./gradlew openApiGenerate` | Regenerate server interfaces from `api/openapi.yaml` (runs automatically before compile). |
+
+Module documentation (C4 diagrams, module canvases) is written to `build/spring-modulith-docs` by `ModularityTest`.
+
+## Layout
+
+```
+api/openapi.yaml                 contract – single source of truth, published per release tag
+src/main/java/com/mosaicglobal/finance
+├─ FinanceApplication            @Modulithic entry point, Clock bean
+├─ shared/
+│  ├─ kernel/                    Money, UserId, DomainEvent, AggregateRoot, DomainException – pure Java
+│  ├─ web/                       RFC 7807 problems, cursor paging, Idempotency-Key filter (Redis)
+│  ├─ persistence/               AbstractJpaEntity (id, version, audit, soft delete)
+│  ├─ security/                  stateless JWT resource server, key config, AuthenticatedUser
+│  └─ messaging/                 exchanges, consumer queue template, outbox externalization, dedup
+└─ modules/
+   ├─ identity/                  users, credentials, refresh-token sessions (reference module)
+   └─ notification/              consumes identity.user.registered → welcome message (reference consumer)
+src/main/resources/db/migration  Flyway (V1 platform tables, V2 identity)
+src/test                         unit + architecture tests
+src/integrationTest              Testcontainers end-to-end tests
+docs/adr                         decisions · docs/module-template.md – how to add a module
+```
+
+Each module follows `domain → application → adapter` (see `docs/module-template.md`).
+
+## Contract-first workflow
+
+1. Change `api/openapi.yaml` first. `./gradlew compileJava` regenerates `AuthApi`, `MeApi` and DTOs; controllers implement the interfaces, so a contract change that is not implemented fails to compile.
+2. Tag `vX.Y.Z` → CI attaches the contract to the GitHub release. `finance-mobile` pins that version and generates its client from it.
+3. Breaking change → new major, new `/api/v2` path; keep `/v1` for at least two releases.
+
+## Configuration
+
+Environment variables (see `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `RABBITMQ_*`, `JWT_PRIVATE_KEY_PEM`, `JWT_PUBLIC_KEY_PEM`.
+Without JWT keys the app generates an ephemeral RSA pair (dev only; logged as a warning).
