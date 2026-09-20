@@ -5,7 +5,11 @@ description: Debug luồng xác thực (JWT RS256, refresh token rotation, 401/4
 
 # Debug auth & idempotency
 
-Quyết định nền: `docs/adr/ADR-004-auth-tokens.md`. Code: `shared/security/`, `shared/web/idempotency/`, `modules/identity/`.
+Quyết định nền: `docs/adr/ADR-004-auth-keycloak.md`. Code: `shared/security/`, `shared/web/idempotency/`, `modules/identity/`.
+
+> ⚠️ **Phần auth của skill này đã lỗi thời.** Hệ thống đang migrate sang Keycloak (ADR-004 mới).
+> Mô tả JWT tự phát hành / refresh token rotation bên dưới chỉ còn đúng cho tới khi Phase 2 của
+> `docs/AUTH-KEYCLOAK-PLAN.md` hoàn tất. Phần idempotency vẫn đúng.
 
 ## Bản đồ luồng auth
 
