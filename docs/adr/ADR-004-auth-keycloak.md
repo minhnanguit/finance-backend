@@ -31,7 +31,7 @@ Dùng **Keycloak self-host** làm IdP duy nhất. Backend **không còn phát h�
 | Audience | `finance-api` (phải thêm **audience mapper** trong realm, Keycloak không tự bỏ vào) |
 | Redirect URI | `com.mosaicglobal.finance://oauth/callback` (thêm App Links / Universal Links sau) |
 | Access token TTL | 5 phút |
-| Refresh token TTL | 30 ngày, bật **rotation + reuse detection** |
+| Refresh token TTL | 30 ngày, bật rotation (`revokeRefreshToken`, `refreshTokenMaxReuse=0`) |
 | Khoá định danh | claim `sub`. **Không dùng email** — email đổi được |
 | Cổng local | `8081` (backend giữ `8080`) |
 
@@ -56,6 +56,13 @@ Brute force detection · password policy (≥ 12 ký tự, không trùng usernam
 - `modules.identity` co từ 58 file xuống ~15. Không còn giữ password hash → giảm hẳn bề mặt rủi ro.
 - `shared.security` đơn giản hơn: chỉ decode, không encode. Xoá `JwtKeyConfiguration`, `PemKeys`, `JwtProperties`.
 - Thêm Google/Apple sign-in sau này là cấu hình, không phải code.
+
+**Giới hạn đã đo thật (2026-09-20, Keycloak 26.7.4):**
+- Rotation của Keycloak **không** phải reuse detection đầy đủ. Nó chỉ nhớ một token hiện hành:
+  dùng lại **đúng token vừa dùng** thì bị chặn và huỷ session ✅, nhưng dùng một token **cũ hơn**
+  trong chuỗi (sau khi đã xoay thêm lần nữa) thì **vẫn được chấp nhận** ⚠️.
+- Hệ quả: token cũ lọt ra ngoài vẫn dùng được tới khi session hết hạn (30 ngày). Kịch bản trộm
+  token hiện hành thì vẫn bị bắt. Chi tiết và cách giảm thiểu ở `deploy/keycloak/README.md`.
 
 **Mất / phải chấp nhận:**
 - ⚠️ **Tự chịu trách nhiệm vá CVE Keycloak.** Keycloak ra bản mới ~mỗi quý và đã từng có CVE nghiêm trọng. Phải đặt lịch nâng cấp hàng quý — đây là cái giá của self-host.

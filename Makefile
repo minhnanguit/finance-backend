@@ -7,7 +7,7 @@ GRADLE   := ./gradlew
 BASE_URL ?= http://localhost:8080
 
 .DEFAULT_GOAL := help
-.PHONY: help up down reset ps logs run health swagger rabbit test itest build fmt lint api clean
+.PHONY: help up down reset ps logs run health swagger rabbit kc kc-db mail test itest build fmt lint api clean
 
 help: ## Liệt kê mọi lệnh make của repo này
 	@echo "finance-backend — các lệnh có sẵn:"
@@ -16,7 +16,7 @@ help: ## Liệt kê mọi lệnh make của repo này
 
 # ---------- Hạ tầng (Docker) ----------
 
-up: ## Bật Postgres + Redis + RabbitMQ chạy nền, chờ tới khi cả 3 healthy
+up: ## Bật Postgres + Redis + RabbitMQ + Keycloak + Mailpit, chờ tới khi healthy
 	$(COMPOSE) up -d --wait
 
 down: ## Tắt hạ tầng nhưng GIỮ nguyên dữ liệu trong volume
@@ -25,7 +25,7 @@ down: ## Tắt hạ tầng nhưng GIỮ nguyên dữ liệu trong volume
 reset: ## Tắt hạ tầng và XOÁ sạch dữ liệu — database trở về trắng
 	$(COMPOSE) down -v
 
-ps: ## Xem 3 container đang sống và healthy hay không
+ps: ## Xem các container đang sống của projecy này và healthy hay không
 	$(COMPOSE) ps
 
 logs: ## Xem log realtime của hạ tầng (Ctrl+C để thoát)
@@ -44,6 +44,20 @@ swagger: ## Mở Swagger UI trên trình duyệt
 
 rabbit: ## Mở trang quản trị RabbitMQ (tài khoản finance / finance)
 	@open http://localhost:15672
+
+# ---------- Keycloak ----------
+
+kc: ## Mở Keycloak Admin Console (tài khoản admin / admin)
+	@open http://localhost:8081/admin
+
+mail: ## Mở Mailpit để đọc mail verify / reset password Keycloak gửi
+	@open http://localhost:8025
+
+kc-db: ## Tạo database `keycloak` thủ công — chỉ cần khi volume postgres đã có sẵn từ trước
+	@$(COMPOSE) exec -T postgres psql -U finance -d finance -v ON_ERROR_STOP=0 \
+	  -c "CREATE USER keycloak WITH PASSWORD 'keycloak';" \
+	  -c "CREATE DATABASE keycloak OWNER keycloak;" || true
+	@echo "Xong. Nếu báo 'already exists' thì database đã có sẵn, không sao."
 
 # ---------- Kiểm thử & chất lượng ----------
 

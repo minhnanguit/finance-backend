@@ -18,7 +18,7 @@ Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` đ�
 | Lệnh | Chạy gì |
 |---|---|
 | `make` | Liệt kê mọi target (mặc định = `make help`) |
-| `make up` | Postgres 17 + Redis 7 + RabbitMQ 4, chờ tới khi healthy — bắt buộc trước `make run` / `make itest` |
+| `make up` | Postgres 17 + Redis 7 + RabbitMQ 4 + Keycloak 26 + Mailpit, chờ tới khi healthy — bắt buộc trước `make run` / `make itest` |
 | `make run` | App ở `http://localhost:8080` |
 | `make health` | Gọi `/actuator/health` xem app sống chưa |
 | `make down` | Tắt hạ tầng, giữ dữ liệu |
@@ -29,6 +29,9 @@ Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` đ�
 | `make fmt` | Format google-java-format (chạy trước khi commit) |
 | `make lint` | Chỉ kiểm tra format, không sửa file (giống CI) |
 | `make api` | Sinh lại server interface từ `api/openapi.yaml` (tự chạy trước `compileJava`) |
+| `make kc` | Mở Keycloak Admin Console — `admin` / `admin` (ADR-004) |
+| `make mail` | Mở Mailpit đọc mail verify / reset password |
+| `make kc-db` | Tạo database `keycloak` khi volume Postgres đã có sẵn từ trước |
 
 Chạy nối tiếp nhiều việc: `make up run`, `make fmt test itest`.
 
