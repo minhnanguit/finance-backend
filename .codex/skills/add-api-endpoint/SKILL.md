@@ -34,7 +34,7 @@ Bắt buộc đọc trước: `.codex/rules/contract-first-api.md`, `.codex/rule
 ### 2. Sinh interface
 
 ```bash
-./gradlew openApiGenerate      # hoặc compileJava, nó tự dependsOn
+make api      # hoặc compileJava, nó tự dependsOn
 ```
 
 Output: `build/generated/openapi/src/main/java/com/mosaicglobal/finance/api/v1/…`. Đọc interface vừa sinh để biết signature chính xác trước khi viết controller.
@@ -77,9 +77,9 @@ Ném `DomainException` subclass với `ErrorCategory` + code `<module>.<reason>`
 ### 6. Verify
 
 ```bash
-./gradlew spotlessApply
-./gradlew test
-./gradlew integrationTest        # thêm IT trong src/integrationTest, mẫu AuthFlowIT + ApiClient
+make fmt
+make test
+make itest        # thêm IT trong src/integrationTest, mẫu AuthFlowIT + ApiClient
 ```
 
 ## Checklist trước khi báo xong

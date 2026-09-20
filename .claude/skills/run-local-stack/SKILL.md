@@ -8,8 +8,8 @@ description: Chạy hạ tầng và app finance-backend ở máy local, và veri
 ## 1. Hạ tầng
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d
-docker compose -f deploy/docker-compose.yml ps     # chờ healthcheck healthy
+make up
+make ps     # chờ healthcheck healthy
 ```
 
 | Service | Image | Port | Credential |
@@ -18,12 +18,12 @@ docker compose -f deploy/docker-compose.yml ps     # chờ healthcheck healthy
 | redis | `redis:7-alpine` | 6379 | — |
 | rabbitmq | `rabbitmq:4-management-alpine` | 5672, UI 15672 | `finance` / `finance` |
 
-Trên máy dev này: **mở Docker Desktop trước**, nếu không `integrationTest` và `bootRun` sẽ fail.
+Trên máy dev này: **mở Docker Desktop trước**, nếu không `make itest` và `make run` sẽ fail.
 
 ## 2. Chạy app
 
 ```bash
-./gradlew bootRun     # http://localhost:8080
+make run     # http://localhost:8080
 ```
 
 | Endpoint | Dùng để |
@@ -40,11 +40,11 @@ Biến môi trường: `.env.example` → `DB_URL`, `DB_USER`, `DB_PASSWORD`, `R
 
 | Bạn đã sửa | Chạy tối thiểu |
 |---|---|
-| Chỉ domain / use case | `./gradlew spotlessApply test` |
-| Adapter, security, web, messaging | `+ ./gradlew integrationTest` |
-| Migration / JPA entity | `+ ./gradlew integrationTest` (Flyway chạy từ đầu trong Testcontainers) |
-| `api/openapi.yaml` | `+ ./gradlew openApiGenerate compileJava` rồi `test integrationTest` |
-| Trước khi PR | `./gradlew build` (gồm `spotlessCheck` + cả hai suite + bootJar) |
+| Chỉ domain / use case | `make fmt test` |
+| Adapter, security, web, messaging | `+ make itest` |
+| Migration / JPA entity | `+ make itest` (Flyway chạy từ đầu trong Testcontainers) |
+| `api/openapi.yaml` | `+ make api` rồi `make test itest` |
+| Trước khi PR | `make build` (gồm `spotlessCheck` + cả hai suite + bootJar) |
 
 Báo cáo trung thực: chưa chạy được suite nào thì nói rõ là **chưa chạy** kèm lý do, đừng suy đoán kết quả.
 
@@ -57,12 +57,12 @@ Báo cáo trung thực: chưa chạy được suite nào thì nói rõ là **ch�
 ## 5. Dọn
 
 ```bash
-docker compose -f deploy/docker-compose.yml down        # giữ volume
-docker compose -f deploy/docker-compose.yml down -v     # xoá cả dữ liệu — hỏi user trước
+make down     # giữ volume
+make reset    # xoá cả dữ liệu — hỏi user trước
 ```
 
 ## Lưu ý
 
-- `./gradlew clean` hiếm khi cần; build cache và parallel đang bật (`gradle.properties`).
+- `make clean` hiếm khi cần; build cache và parallel đang bật (`gradle.properties`).
 - `bin/`, `build/`, `.gradle/` là output, đã gitignore.
 - Toolchain khai Java 21, foojay resolver tự tải nếu thiếu. Nếu `JAVA_HOME` của máy trỏ JDK khác mà build lỗi toolchain → **verify before use**, đừng sửa `build.gradle.kts` để né.

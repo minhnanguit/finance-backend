@@ -6,14 +6,17 @@ The architecture is locked in [`ARCHITECTURE.md`](../ARCHITECTURE.md) (repo-leve
 
 ## Run locally
 
+Every routine command is a `make` target — run `make` with no argument to list them all.
+
 ```bash
-docker compose -f deploy/docker-compose.yml up -d     # postgres, redis, rabbitmq
-./gradlew bootRun                                      # http://localhost:8080
+make up      # postgres, redis, rabbitmq — waits until all three are healthy
+make run     # http://localhost:8080 (Ctrl+C to stop)
 ```
 
-- Health: `GET /actuator/health` · Modulith: `GET /actuator/modulith`
-- API contract & Swagger UI: `GET /openapi.yaml`, `GET /swagger-ui.html`
-- RabbitMQ UI: http://localhost:15672 (finance / finance)
+- Health: `make health` · Modulith: `GET /actuator/modulith`
+- API contract & Swagger UI: `make swagger` · `GET /openapi.yaml`
+- RabbitMQ UI: `make rabbit` — http://localhost:15672 (finance / finance)
+- Stop the infrastructure: `make down` (keeps data) · `make reset` (wipes the volumes)
 
 Try it:
 
@@ -30,11 +33,14 @@ Requires a JDK 21 (auto-provisioned by the Gradle toolchain if missing) and Dock
 
 | Command | What runs |
 |---|---|
-| `./gradlew test` | Unit tests + **architecture tests** (ArchUnit rules, Modulith verify). No infra needed. |
-| `./gradlew integrationTest` | Spring context + Testcontainers (Postgres, RabbitMQ, Redis). Needs Docker. |
-| `./gradlew build` | Everything above + `spotlessCheck` + boot jar. |
-| `./gradlew spotlessApply` | Format (google-java-format). |
-| `./gradlew openApiGenerate` | Regenerate server interfaces from `api/openapi.yaml` (runs automatically before compile). |
+| `make` | List every target in the Makefile. |
+| `make test` | Unit tests + **architecture tests** (ArchUnit rules, Modulith verify). No infra needed. |
+| `make itest` | Spring context + Testcontainers (Postgres, RabbitMQ, Redis). Needs Docker. |
+| `make build` | Everything above + `spotlessCheck` + boot jar. |
+| `make fmt` | Format (google-java-format). |
+| `make lint` | Check formatting without rewriting files (what CI does). |
+| `make api` | Regenerate server interfaces from `api/openapi.yaml` (runs automatically before compile). |
+| `make clean` | Delete `build/`. |
 
 Module documentation (C4 diagrams, module canvases) is written to `build/spring-modulith-docs` by `ModularityTest`.
 

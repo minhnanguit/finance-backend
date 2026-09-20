@@ -13,15 +13,24 @@ Modular monolith (Spring Modulith) phục vụ app Finance mobile.
 
 ## 2. Commands
 
+Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` để xem danh sách đầy đủ.
+
 | Lệnh | Chạy gì |
 |---|---|
-| `docker compose -f deploy/docker-compose.yml up -d` | Postgres 17 + Redis 7 + RabbitMQ 4 (bắt buộc trước `bootRun` / `integrationTest`) |
-| `./gradlew bootRun` | App ở `http://localhost:8080` |
-| `./gradlew test` | Unit + **architecture tests** (ArchUnit + Modulith verify). Không cần Docker |
-| `./gradlew integrationTest` | Spring context + Testcontainers. **Cần Docker** |
-| `./gradlew build` | Tất cả ở trên + `spotlessCheck` + boot jar |
-| `./gradlew spotlessApply` | Format google-java-format (chạy trước khi commit) |
-| `./gradlew openApiGenerate` | Sinh lại server interface từ `api/openapi.yaml` (tự chạy trước `compileJava`) |
+| `make` | Liệt kê mọi target (mặc định = `make help`) |
+| `make up` | Postgres 17 + Redis 7 + RabbitMQ 4, chờ tới khi healthy — bắt buộc trước `make run` / `make itest` |
+| `make run` | App ở `http://localhost:8080` |
+| `make health` | Gọi `/actuator/health` xem app sống chưa |
+| `make down` | Tắt hạ tầng, giữ dữ liệu |
+| `make reset` | Tắt hạ tầng và xoá sạch volume — DB về trắng. **Hỏi user trước** |
+| `make test` | Unit + **architecture tests** (ArchUnit + Modulith verify). Không cần Docker |
+| `make itest` | Spring context + Testcontainers. **Cần Docker** |
+| `make build` | Tất cả ở trên + `spotlessCheck` + boot jar |
+| `make fmt` | Format google-java-format (chạy trước khi commit) |
+| `make lint` | Chỉ kiểm tra format, không sửa file (giống CI) |
+| `make api` | Sinh lại server interface từ `api/openapi.yaml` (tự chạy trước `compileJava`) |
+
+Chạy nối tiếp nhiều việc: `make up run`, `make fmt test itest`.
 
 Không có lint riêng: **Spotless (google-java-format) là lint**; ArchUnit là "lint kiến trúc".
 CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTest` → `bootJar`. Tag `v*` → release `api/openapi.yaml`.

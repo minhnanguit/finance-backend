@@ -4,8 +4,8 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 
 | Suite | Lệnh | Cần Docker | Chứa gì |
 |---|---|---|---|
-| `test` | `./gradlew test` | Không | Unit domain (JUnit thuần) · use case với fake port · `ArchitectureRulesTest` · `ModularityTest` · filter test |
-| `integrationTest` | `./gradlew integrationTest` | **Có** | Spring context + Testcontainers (Postgres, RabbitMQ) + `spring-security-test` + `awaitility` |
+| `test` | `make test` | Không | Unit domain (JUnit thuần) · use case với fake port · `ArchitectureRulesTest` · `ModularityTest` · filter test |
+| `integrationTest` | `make itest` | **Có** | Spring context + Testcontainers (Postgres, RabbitMQ) + `spring-security-test` + `awaitility` |
 
 `tasks.check` phụ thuộc `integrationTest`. `integrationTest` `shouldRunAfter(test)`.
 
@@ -32,9 +32,9 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 Trước khi báo hoàn thành, phải chạy và báo cáo trung thực kết quả:
 
 ```bash
-./gradlew spotlessApply
-./gradlew test                # luôn luôn
-./gradlew integrationTest     # nếu đụng adapter / migration / messaging / security
+make fmt
+make test     # luôn luôn
+make itest    # nếu đụng adapter / migration / messaging / security
 ```
 
 Nếu không chạy được (thiếu Docker…) thì nói rõ là **chưa chạy**, đừng suy đoán là xanh.

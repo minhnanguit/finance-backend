@@ -76,5 +76,5 @@ class UserRegisteredListener {
 - [ ] Payload record cục bộ, không import class module khác
 - [ ] `EventDeduplicator.executeOnce(eventId, CONSUMER, handler)`
 - [ ] Không nuốt exception, không `@Transactional` trên listener
-- [ ] `./gradlew test integrationTest` xanh
+- [ ] `make test itest` xanh
 - [ ] Đổi payload không tương thích → tăng `schemaVersion()` và nêu kế hoạch chạy song song 2 version

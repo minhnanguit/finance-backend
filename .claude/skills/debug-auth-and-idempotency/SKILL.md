@@ -52,8 +52,8 @@ Filter đăng ký **sau** `AuthorizationFilter` để scope được theo user �
 ## Lệnh kiểm tra nhanh
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d
-./gradlew bootRun
+make up
+make run
 
 KEY=$(uuidgen)
 curl -s -i -X POST localhost:8080/api/v1/auth/register \

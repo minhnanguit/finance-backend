@@ -59,8 +59,8 @@ modules/<name>/
 
 ## 4. Checklist before opening the PR
 
-- [ ] `./gradlew test` green (architecture rules included)
-- [ ] `./gradlew integrationTest` green
+- [ ] `make test` green (architecture rules included)
+- [ ] `make itest` green
 - [ ] Contract updated in `api/openapi.yaml` first, controller implements the generated interface
 - [ ] New queue declared by the consuming module through `ConsumerQueues.forEvent`
 - [ ] Flyway migration added; `ddl-auto=validate` passes

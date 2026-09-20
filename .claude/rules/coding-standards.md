@@ -2,7 +2,7 @@
 
 ## Format & lint
 
-- `./gradlew spotlessApply` trước khi commit. `spotlessCheck` chặn CI.
+- `make fmt` trước khi commit. `spotlessCheck` chặn CI.
 - google-java-format, `removeUnusedImports`, `formatAnnotations`. Target `src/**/*.java`.
 - Compiler args MapStruct đã bật `unmappedTargetPolicy=ERROR` — mapping thiếu là lỗi compile.
 
