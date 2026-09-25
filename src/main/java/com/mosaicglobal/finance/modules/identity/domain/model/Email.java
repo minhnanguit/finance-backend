@@ -4,7 +4,7 @@ import com.mosaicglobal.finance.shared.kernel.Ensure;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/** Normalised (lower-case, trimmed) e-mail address. */
+/** Dùng {@link #of} để normalize (lowercase, trim) trước khi so sánh. */
 public record Email(String value) {
 
   private static final int MAX_LENGTH = 254;

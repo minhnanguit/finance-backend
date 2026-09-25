@@ -13,11 +13,11 @@ interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
   Optional<UserJpaEntity> findByExternalSubject(String externalSubject);
 
   /**
-   * Insert that loses gracefully. {@code ON CONFLICT DO NOTHING} lets two concurrent first-ever
-   * requests for one subject both succeed at the database level — one inserts, the other gets 0
-   * rows and reads the winner — instead of one of them poisoning its transaction.
+   * {@code ON CONFLICT DO NOTHING}: hai concurrent request đầu tiên cho cùng một {@code sub} đều
+   * thành công ở DB — một bên insert, bên kia nhận 0 row rồi đọc lại — thay vì một bên làm
+   * transaction bị rollback.
    *
-   * @return 1 when this statement created the row, 0 when the subject was already taken
+   * @return 1 nếu statement này insert được row, 0 nếu {@code sub} đã tồn tại
    */
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(

@@ -9,6 +9,5 @@ public interface LoadUserPort {
 
   Optional<User> byId(UserId id);
 
-  /** Lookup on the authentication path. Backed by a unique index. */
   Optional<User> byExternalSubject(ExternalSubject subject);
 }

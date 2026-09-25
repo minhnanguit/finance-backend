@@ -6,7 +6,6 @@ import com.mosaicglobal.finance.modules.identity.domain.model.ExternalSubject;
 import com.mosaicglobal.finance.modules.identity.domain.model.User;
 import com.mosaicglobal.finance.shared.kernel.UserId;
 
-/** Domain ↔ JPA. Hand-written so value-object construction stays explicit and compile-checked. */
 final class UserPersistenceMapper {
 
   private UserPersistenceMapper() {}

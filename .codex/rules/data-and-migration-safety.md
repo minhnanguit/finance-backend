@@ -3,7 +3,7 @@
 ## Flyway là chủ schema
 
 - Vị trí: `src/main/resources/db/migration`, `spring.flyway.enabled=true`.
-- Đặt tên: `V<n>__<module>_<what>.sql` (đang có `V1__platform_outbox_and_dedup.sql`, `V2__identity.sql`).
+- Đặt tên: `V<n>__<module>_<what>.sql` (đang có `V1__platform_outbox_and_dedup.sql`, `V2__identity.sql`, `V3__identity_external_idp.sql`).
 - `spring.jpa.hibernate.ddl-auto=validate` → entity lệch migration thì app **không khởi động được**. Đây là tính năng.
 - Schema của outbox Modulith (`event_publication`, `event_publication_archive`, `processed_events`) do Flyway V1 sở hữu; `spring.modulith.events.jdbc.schema-initialization.enabled=false`. Đừng bật lại.
 

@@ -82,9 +82,9 @@ springdoc:
 
 app:
   security:
-    # Keycloak là IdP duy nhất. App này chỉ verify token, không phát hành.
+    # Keycloak là IdP duy nhất. App này chỉ verify token, không issue token.
     # issuer-uri là giá trị nằm TRONG token; ở local nó là địa chỉ emulator thấy được,
-    # còn tiến trình này tải khoá qua jwk-set-uri trên localhost. Hai giá trị cố ý khác nhau.
+    # còn process này fetch key qua jwk-set-uri trên localhost. Hai giá trị cố ý khác nhau.
     issuer-uri: ${KEYCLOAK_ISSUER_URI:http://10.0.2.2:8081/realms/finance}
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/finance/protocol/openid-connect/certs}
     audience: ${KEYCLOAK_AUDIENCE:finance-api}

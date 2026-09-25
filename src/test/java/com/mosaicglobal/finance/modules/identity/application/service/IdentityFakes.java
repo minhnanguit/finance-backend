@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** In-memory doubles for the identity ports. Fakes, not mocks: behaviour is readable here. */
+/** Fake in-memory cho các port của identity — dùng fake thay mock để đọc được behavior. */
 final class IdentityFakes {
 
   private IdentityFakes() {}
@@ -25,7 +25,7 @@ final class IdentityFakes {
     int insertAttempts;
     int updates;
 
-    /** Set to simulate another request winning the insert race. */
+    /** Set để simulate một request khác thắng race insert. */
     User raceWinner;
 
     @Override

@@ -14,8 +14,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * The authentication path end to end: a signed token arrives, its signature, issuer and audience
- * are checked against a real JWKS endpoint, and the local account is created on first sight.
+ * Authentication flow end-to-end: token có signature thật, được verify signature / issuer /
+ * audience qua JWKS endpoint thật, và local account được provision ở lần đầu.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
@@ -30,7 +30,7 @@ class JitProvisioningIT {
     registry.add("app.security.issuer-uri", () -> TestIdentityProvider.ISSUER);
     registry.add("app.security.jwk-set-uri", idp::jwkSetUri);
     registry.add("app.security.audience", () -> TestIdentityProvider.AUDIENCE);
-    // No caching, so every assertion below observes the database rather than a memoised answer.
+    // Tắt cache để mọi assert bên dưới thấy DB thật, không phải kết quả cached.
     registry.add("app.identity.subject-cache-ttl", () -> "0s");
   }
 
@@ -42,7 +42,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("first authenticated request creates exactly one local account")
+  @DisplayName("request có token đầu tiên tạo đúng một local account")
   void firstRequestProvisions() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -57,12 +57,12 @@ class JitProvisioningIT {
     assertThat(body.get("displayName").asString()).isEqualTo("Ann Example");
     assertThat(usersWithSubject(subject)).isEqualTo(1);
 
-    // The id handed to clients is ours, not the IdP's subject.
+    // Id trả cho client là internal id, không phải sub.
     assertThat(body.get("id").asString()).isNotEqualTo(subject);
   }
 
   @Test
-  @DisplayName("repeat requests reuse the same account instead of creating another")
+  @DisplayName("request lặp lại thì reuse account, không tạo thêm")
   void repeatRequestsAreIdempotent() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -77,7 +77,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("a profile changed at the provider is written through on the next request")
+  @DisplayName("profile đổi trên Keycloak được update ở request kế tiếp")
   void profileIsSynced() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -97,7 +97,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("a token minted for another audience is rejected")
+  @DisplayName("token cấp cho audience khác bị reject")
   void wrongAudienceIsRejected() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -116,7 +116,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("a token from another issuer is rejected")
+  @DisplayName("token từ issuer khác bị reject")
   void wrongIssuerIsRejected() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -134,7 +134,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("an expired token is rejected")
+  @DisplayName("token expired bị reject")
   void expiredTokenIsRejected() {
     ApiClient api = new ApiClient(port);
     String subject = "sub-" + UUID.randomUUID();
@@ -152,7 +152,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("no token at all is a problem+json 401, not a redirect")
+  @DisplayName("không có token thì trả 401 problem+json, không redirect")
   void anonymousIsRejected() {
     ApiClient api = new ApiClient(port);
 
@@ -163,7 +163,7 @@ class JitProvisioningIT {
   }
 
   @Test
-  @DisplayName("the auth endpoints of the old self-issued flow are gone")
+  @DisplayName("các endpoint /auth/* của bản self-issued token đã bị gỡ")
   void legacyAuthEndpointsAreGone() {
     ApiClient api = new ApiClient(port);
 

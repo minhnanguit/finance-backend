@@ -4,7 +4,6 @@ import com.mosaicglobal.finance.modules.identity.application.port.in.GetUserProf
 import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
-/** Application result → contract DTO. Explicit on purpose: the contract is the boundary. */
 @Component
 class UserWebMapper {
 

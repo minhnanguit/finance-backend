@@ -34,7 +34,7 @@ make run     # http://localhost:8080
 | `GET /openapi.yaml` | hợp đồng thô |
 | http://localhost:15672 | RabbitMQ UI — xem queue, message parked |
 
-Biến môi trường: `.env.example` → `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST/PORT`, `RABBITMQ_*`, `JWT_PRIVATE_KEY_PEM`, `JWT_PUBLIC_KEY_PEM`. Không set JWT keys thì dev dùng cặp RSA ephemeral (token chết sau mỗi lần restart — đúng thiết kế).
+Biến môi trường: `.env.example` → `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST/PORT`, `RABBITMQ_*`, `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWK_SET_URI`, `KEYCLOAK_AUDIENCE`. Ở local issuer (`10.0.2.2`) và JWKS (`localhost`) cố ý khác nhau — xem `deploy/keycloak/README.md`.
 
 ## 3. Verify theo phạm vi thay đổi
 

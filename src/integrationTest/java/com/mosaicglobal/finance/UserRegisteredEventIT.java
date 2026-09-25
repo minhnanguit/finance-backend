@@ -23,9 +23,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Proves the whole event path: JIT provisioning → outbox (event_publication) → RabbitMQ →
- * notification consumer → de-duplication → welcome message. Nothing in this path is mocked except
- * the final delivery channel.
+ * Chứng minh toàn bộ event flow: JIT provisioning → outbox → RabbitMQ → notification consumer →
+ * dedup → welcome message. Chỉ mock delivery channel cuối cùng.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import({TestcontainersConfiguration.class, UserRegisteredEventIT.RecordingSenderConfig.class})
@@ -63,7 +62,7 @@ class UserRegisteredEventIT {
               assertThat(welcome.getFirst().kind()).isEqualTo(NotificationKind.WELCOME);
             });
 
-    // The consumer recorded the event id, so a redelivery would be skipped.
+    // Consumer đã ghi event id, nên nếu broker redeliver thì sẽ bị skip.
     Integer processed =
         jdbc.sql("select count(*) from processed_events where consumer = :c")
             .param("c", "notification.user-registered")
@@ -71,7 +70,7 @@ class UserRegisteredEventIT {
             .single();
     assertThat(processed).isGreaterThanOrEqualTo(1);
 
-    // The outbox marked the externalization complete (archive mode).
+    // Outbox đã đánh dấu externalization hoàn tất (archive mode).
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(

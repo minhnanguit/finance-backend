@@ -21,11 +21,10 @@ make run     # http://localhost:8080 (Ctrl+C to stop)
 Try it:
 
 ```bash
-KEY=$(uuidgen)
-curl -s -X POST localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -H "Idempotency-Key: $KEY" \
-  -d '{"email":"alice@example.com","password":"correct horse battery","displayName":"Alice",
-       "device":{"deviceId":"dev-00000001","deviceName":"Pixel 9","platform":"ANDROID"}}'
+curl -s -i localhost:8080/api/v1/me     # no token → 401 problem+json
 ```
+
+Sign-in, sign-up and token refresh happen at Keycloak (`make kc`, ADR-004); this API only validates the token.
 
 Requires a JDK 21 (auto-provisioned by the Gradle toolchain if missing) and Docker for integration tests.
 
@@ -69,11 +68,10 @@ Each module follows `domain → application → adapter` (see `docs/module-templ
 
 ## Contract-first workflow
 
-1. Change `api/openapi.yaml` first. `./gradlew compileJava` regenerates `AuthApi`, `MeApi` and DTOs; controllers implement the interfaces, so a contract change that is not implemented fails to compile.
+1. Change `api/openapi.yaml` first. `./gradlew compileJava` regenerates `MeApi` and DTOs; controllers implement the interfaces, so a contract change that is not implemented fails to compile.
 2. Tag `vX.Y.Z` → CI attaches the contract to the GitHub release. `finance-mobile` pins that version and generates its client from it.
 3. Breaking change → new major, new `/api/v2` path; keep `/v1` for at least two releases.
 
 ## Configuration
 
-Environment variables (see `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `RABBITMQ_*`, `JWT_PRIVATE_KEY_PEM`, `JWT_PUBLIC_KEY_PEM`.
-Without JWT keys the app generates an ephemeral RSA pair (dev only; logged as a warning).
+Environment variables (see `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `RABBITMQ_*`, `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWK_SET_URI`, `KEYCLOAK_AUDIENCE`.

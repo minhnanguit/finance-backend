@@ -1,10 +1,8 @@
 /**
- * Identity: the local record of each person who signs in, and the mapping from the identity
- * provider's subject to the id every other module uses.
+ * Identity: local record của từng user và mapping {@code sub} Keycloak → internal id.
  *
- * <p>Holds no credentials: Keycloak owns passwords, sessions and refresh tokens (ADR-004). Other
- * modules learn about users through the events in {@code domain.event} (named interface "events"),
- * never by reading identity tables.
+ * <p>Không giữ password, session hay refresh token — Keycloak lo (ADR-004). Module khác biết về
+ * user qua event trong {@code domain.event}, không bao giờ đọc table của identity.
  */
 @org.springframework.modulith.ApplicationModule(
     displayName = "Identity",

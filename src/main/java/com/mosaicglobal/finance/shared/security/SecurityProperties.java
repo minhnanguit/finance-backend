@@ -3,16 +3,14 @@ package com.mosaicglobal.finance.shared.security;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Resource-server settings. Declared here rather than reusing Spring Boot's own {@code
- * spring.security.oauth2.resourceserver.*} binding so the three values that matter are explicit,
- * validated together and unaffected by Boot's internal repackaging.
+ * Không dùng {@code spring.security.oauth2.resourceserver.*} của Boot vì class properties đó đã bị
+ * dời package ở Boot 4; tự khai thì ba giá trị quan trọng nằm rõ một chỗ.
  *
- * @param issuerUri value the token's {@code iss} claim must equal. In local development this is the
- *     address the <em>emulator</em> reaches Keycloak on, which this process cannot resolve — hence
- *     the separate {@code jwkSetUri}.
- * @param jwkSetUri where <em>this process</em> fetches signing keys. Cached by the decoder.
- * @param audience value that must appear in {@code aud}. Without it, any token from the same realm
- *     — including one minted for another client — would be accepted.
+ * @param issuerUri giá trị {@code iss} bắt buộc trong token. Ở local đây là địa chỉ
+ *     <em>emulator</em> dùng để gọi Keycloak ({@code 10.0.2.2}), process này không gọi tới được —
+ *     nên mới tách riêng {@code jwkSetUri}.
+ * @param jwkSetUri nơi process này fetch signing key.
+ * @param audience giá trị bắt buộc có trong {@code aud}.
  */
 @ConfigurationProperties(prefix = "app.security")
 public record SecurityProperties(String issuerUri, String jwkSetUri, String audience) {}

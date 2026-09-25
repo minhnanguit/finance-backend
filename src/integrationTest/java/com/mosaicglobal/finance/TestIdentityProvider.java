@@ -18,14 +18,11 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A stand-in for Keycloak: an RSA key, a real JWKS endpoint over HTTP, and tokens signed with it.
+ * Fake Keycloak: RSA key, JWKS endpoint thật qua HTTP, và token được sign bằng key đó.
  *
- * <p>Deliberately not a mocked {@code JwtDecoder}. The application fetches the key set over the
- * network and runs its own signature, issuer and audience checks, so those code paths are the ones
- * under test. Only Keycloak's login UI and token endpoint are out of scope — those belong to the
- * end-to-end run on the emulator (Phase 5).
- *
- * <p>Uses the JDK's own HTTP server so no test dependency is added.
+ * <p>Cố ý không mock {@code JwtDecoder}: app tự fetch JWKS qua network và tự verify signature /
+ * issuer / audience, nên đó chính là code được test. Chỉ thiếu login UI của Keycloak — phần đó test
+ * trên emulator. Dùng HTTP server có sẵn của JDK để không thêm dependency.
  */
 final class TestIdentityProvider {
 
@@ -64,7 +61,7 @@ final class TestIdentityProvider {
     return "http://127.0.0.1:" + server.getAddress().getPort() + "/jwks";
   }
 
-  /** A token this application should accept. */
+  /** Token mà app phải accept. */
   String validToken(String subject, String email, String displayName) {
     return token(ISSUER, AUDIENCE, subject, email, displayName, Instant.now().plusSeconds(300));
   }

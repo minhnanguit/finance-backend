@@ -7,7 +7,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
-/** Real infrastructure for integration tests; Spring Boot wires the connection details. */
+/** Infrastructure thật cho integration test; Spring Boot tự wire connection details. */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 

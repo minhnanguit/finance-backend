@@ -5,16 +5,13 @@ import com.mosaicglobal.finance.modules.identity.domain.model.User;
 public interface SaveUserPort {
 
   /**
-   * Inserts the account unless another row already claims the same external subject.
+   * Trả {@code false} thay vì throw exception khi {@code sub} đã tồn tại: hai concurrent request
+   * đầu tiên là chuyện bình thường, còn exception sẽ đánh dấu transaction bên ngoài là
+   * rollback-only và biến race thành request lỗi.
    *
-   * <p>Returns {@code false} instead of throwing on that conflict: two concurrent first-ever
-   * requests for one subject are normal, and an exception here would doom the surrounding
-   * transaction and turn a race into a failed request.
-   *
-   * @return {@code true} when this call created the row
+   * @return {@code true} nếu lần gọi này insert được row
    */
   boolean insertIfAbsent(User user);
 
-  /** Persists a profile change on an account that already exists. */
   void update(User user);
 }

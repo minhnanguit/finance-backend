@@ -12,47 +12,38 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
- * Inbound adapter: plugs {@code identity} into the security layer's
- * {@link CurrentUserResolver}
- * SPI.
+ * Plug {@code identity} vào SPI {@link CurrentUserResolver} của security layer.
  *
- * <p>
- * Sits on the hot path — every authenticated request goes through it — so a hit
- * costs one
- * in-memory lookup and no database round trip. Only a miss reaches the use
- * case, which is also
- * where a profile change from the provider is picked up; the TTL is therefore
- * the staleness bound.
- *
- * <p>
- * {@link Cache#get(Object, java.util.function.Function)} collapses concurrent
- * misses for the
- * same subject into a single call, so a burst of first requests provisions
- * once.
+ * <p>Nằm trên hot path — mọi request có token đều qua đây — nên cache hit chỉ tốn một lần lookup
+ * in-memory. {@link Cache#get(Object, java.util.function.Function)} gộp các concurrent miss của
+ * cùng một {@code sub} thành một lần gọi, nên burst request đầu tiên chỉ provision một lần.
  */
 @Component
 class ProvisioningCurrentUserResolver implements CurrentUserResolver {
 
-    private final ProvisionUserUseCase provisionUser;
-    private final Cache<String, UUID> resolvedSubjects;
+  private final ProvisionUserUseCase provisionUser;
+  private final Cache<String, UUID> resolvedSubjects;
 
-    ProvisioningCurrentUserResolver(
-            ProvisionUserUseCase provisionUser, IdentityProperties properties) {
-        this.provisionUser = provisionUser;
-        this.resolvedSubjects = Caffeine.newBuilder()
-                .maximumSize(properties.subjectCacheSize())
-                .expireAfterWrite(properties.subjectCacheTtl())
-                .build();
-    }
+  ProvisioningCurrentUserResolver(
+      ProvisionUserUseCase provisionUser, IdentityProperties properties) {
+    this.provisionUser = provisionUser;
+    this.resolvedSubjects =
+        Caffeine.newBuilder()
+            .maximumSize(properties.subjectCacheSize())
+            .expireAfterWrite(properties.subjectCacheTtl())
+            .build();
+  }
 
-    @Override
-    public UserId resolve(SubjectClaims claims) {
-        UUID userId = resolvedSubjects.get(
-                claims.subject(),
-                subject -> provisionUser
-                        .provision(
-                                new ProvisionUserCommand(subject, claims.email(), claims.displayName()))
-                        .value());
-        return new UserId(userId);
-    }
+  @Override
+  public UserId resolve(SubjectClaims claims) {
+    UUID userId =
+        resolvedSubjects.get(
+            claims.subject(),
+            subject ->
+                provisionUser
+                    .provision(
+                        new ProvisionUserCommand(subject, claims.email(), claims.displayName()))
+                    .value());
+    return new UserId(userId);
+  }
 }

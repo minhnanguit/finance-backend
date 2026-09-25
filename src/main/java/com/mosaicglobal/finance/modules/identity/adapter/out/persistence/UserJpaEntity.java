@@ -59,7 +59,7 @@ class UserJpaEntity extends AbstractJpaEntity {
     return status;
   }
 
-  /** The external subject is immutable: it is the link to the IdP account, not a profile field. */
+  /** Không có {@code externalSubject}: đó là link tới account Keycloak, immutable. */
   void applyProfile(String email, String displayName, UserStatus status) {
     this.email = email;
     this.displayName = displayName;

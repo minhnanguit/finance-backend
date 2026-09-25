@@ -9,7 +9,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Small HTTP helper for integration tests: never throws on 4xx/5xx, parses JSON bodies. */
+/** HTTP helper cho integration test: không throw exception khi 4xx/5xx để test tự assert status. */
 final class ApiClient {
 
   private final RestClient http;

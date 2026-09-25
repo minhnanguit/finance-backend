@@ -3,11 +3,9 @@ package com.mosaicglobal.finance.modules.identity.domain.model;
 import com.mosaicglobal.finance.shared.kernel.Ensure;
 
 /**
- * Stable, opaque identifier of the account at the identity provider (the OIDC {@code sub} claim).
- *
- * <p>The only link between a local user and Keycloak. Business tables never reference it — they
- * reference {@link com.mosaicglobal.finance.shared.kernel.UserId}, so the provider can be replaced
- * without migrating them (ADR-004).
+ * Claim {@code sub} của Keycloak — link duy nhất giữa local user và Keycloak. Business table không
+ * bao giờ reference nó mà reference {@link com.mosaicglobal.finance.shared.kernel.UserId}, để đổi
+ * IdP không phải migrate (ADR-004).
  */
 public record ExternalSubject(String value) {
 

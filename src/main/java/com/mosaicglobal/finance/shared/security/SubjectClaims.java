@@ -4,13 +4,10 @@ import java.util.Objects;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * The identity claims this system trusts from the external IdP, extracted from a validated token.
+ * Các claim lấy từ token đã verify. Cố ý hẹp: resolver chỉ nhận đúng thứ nó cần, không nhận cả
+ * {@link Jwt}.
  *
- * <p>Deliberately narrow: {@link CurrentUserResolver} implementations receive only what they need
- * to find or provision a local user, never the whole {@link Jwt}.
- *
- * @param subject stable, opaque id of the account at the IdP (the {@code sub} claim) — never the
- *     e-mail, which the user can change
+ * @param subject claim {@code sub} — identifier duy nhất. Không dùng email vì user đổi được.
  */
 public record SubjectClaims(String subject, String email, String displayName) {
 
@@ -20,7 +17,7 @@ public record SubjectClaims(String subject, String email, String displayName) {
     Objects.requireNonNull(displayName, "displayName");
   }
 
-  /** Reads the standard OIDC claims, falling back so a missing optional claim never 500s. */
+  /** Thiếu optional claim thì fallback sang claim khác, để không bao giờ thành lỗi 500. */
   public static SubjectClaims from(Jwt jwt) {
     String email = claimOrNull(jwt, "email");
     String name = claimOrNull(jwt, "name");

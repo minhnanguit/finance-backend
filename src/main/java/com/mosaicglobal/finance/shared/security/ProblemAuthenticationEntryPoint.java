@@ -12,7 +12,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
-/** 401 / 403 as RFC 7807 problems, consistent with the rest of the API. */
+/** Trả 401 / 403 dạng RFC 7807 để đồng bộ với mọi error response khác của API. */
 @Component
 class ProblemAuthenticationEntryPoint implements AuthenticationEntryPoint, AccessDeniedHandler {
 

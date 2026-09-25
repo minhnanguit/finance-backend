@@ -7,10 +7,8 @@ import com.mosaicglobal.finance.shared.kernel.UserId;
 import java.time.Instant;
 
 /**
- * Aggregate root: the local record of a person who signs in through the identity provider.
- *
- * <p>Holds no credentials. Passwords, sessions and refresh tokens are Keycloak's concern (ADR-004);
- * what lives here is the id every other module keys off, plus a cached copy of the profile.
+ * Local record của user login qua Keycloak. Không giữ password hay token (ADR-004) — chỉ giữ id mà
+ * mọi module khác reference tới, cùng bản copy của profile.
  */
 public final class User extends AggregateRoot {
 
@@ -36,7 +34,7 @@ public final class User extends AggregateRoot {
     this.createdAt = Ensure.notNull(createdAt, "createdAt");
   }
 
-  /** First sight of an authenticated subject: creates the local account and records the event. */
+  /** Lần đầu thấy {@code sub}: tạo account và register event {@link UserRegistered}. */
   public static User provision(
       UserId id,
       ExternalSubject externalSubject,
@@ -48,7 +46,7 @@ public final class User extends AggregateRoot {
     return user;
   }
 
-  /** Reconstitutes an existing account from storage; records no events. */
+  /** Rehydrate từ DB, không register event. */
   public static User rehydrate(
       UserId id,
       ExternalSubject externalSubject,
@@ -59,10 +57,7 @@ public final class User extends AggregateRoot {
     return new User(id, externalSubject, email, displayName, status, createdAt);
   }
 
-  /**
-   * Returns a copy carrying the profile the provider now reports, or {@code this} when nothing
-   * changed — so callers can skip a pointless write.
-   */
+  /** Trả về chính {@code this} khi không có gì đổi, để caller skip write thừa. */
   public User withProfile(Email email, DisplayName displayName) {
     if (this.email.equals(email) && this.displayName.equals(displayName)) {
       return this;

@@ -57,12 +57,12 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
       # QUAN TRỌNG: issuer nằm trong token nên hostname phải CỐ ĐỊNH ngay từ dev.
-      # 10.0.2.2 là host loopback nhìn từ Android emulator -> token phát ra hợp lệ cho cả app lẫn backend.
+      # 10.0.2.2 là host loopback nhìn từ Android emulator -> token được issue ra hợp lệ cho cả app lẫn backend.
       KC_HOSTNAME: http://10.0.2.2:8081
       # Cho phép backend chạy trên host gọi backchannel qua localhost:8081 mà không lệch hostname.
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       # 10.0.2.2 chỉ routable TỪ TRONG emulator. Không có dòng này thì Admin Console mở
-      # trên máy Mac sẽ bị đá sang 10.0.2.2 và treo. Admin đi lối localhost riêng.
+      # trên máy Mac sẽ bị redirect sang 10.0.2.2 và treo. Admin dùng hostname localhost riêng.
       KC_HOSTNAME_ADMIN: http://localhost:8081
       KC_HEALTH_ENABLED: "true"
     ports:
@@ -84,7 +84,7 @@ services:
       retries: 30
       start_period: 40s
 
-  # SMTP giả cho dev: Keycloak gửi mail verify / reset password vào đây.
+  # Fake SMTP cho dev: Keycloak gửi mail verify / reset password vào đây.
   mailpit:
     image: axllent/mailpit:v1.31.2
     environment:

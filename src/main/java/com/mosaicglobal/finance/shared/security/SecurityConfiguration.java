@@ -17,12 +17,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 /**
- * Stateless resource server. Tokens are minted by Keycloak (ADR-004); this application only
- * validates them and never issues one.
+ * Resource server thuần: Keycloak issue token, app này chỉ verify (ADR-004).
  *
- * <p>Issuer and JWKS URI are configured separately on purpose. In local development the issuer
- * baked into the token is reachable only from the Android emulator ({@code 10.0.2.2}), while this
- * process fetches keys over {@code localhost}. Validation still pins the issuer.
+ * <p>Issuer và JWKS cố ý cấu hình riêng: ở local, issuer trong token chỉ reachable từ emulator
+ * ({@code 10.0.2.2}), còn process này fetch key qua {@code localhost}. Issuer vẫn được validate
+ * chặt.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
@@ -70,7 +69,7 @@ class SecurityConfiguration {
                 handling
                     .authenticationEntryPoint(problemHandler)
                     .accessDeniedHandler(problemHandler))
-        // After authorization so the idempotency key can be scoped to the authenticated user.
+        // Đặt sau authorization để idempotency key được scope theo authenticated user.
         .addFilterAfter(idempotencyFilter, AuthorizationFilter.class)
         .build();
   }

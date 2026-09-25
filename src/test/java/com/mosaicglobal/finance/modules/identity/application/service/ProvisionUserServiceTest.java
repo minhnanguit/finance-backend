@@ -39,7 +39,7 @@ class ProvisionUserServiceTest {
   }
 
   @Test
-  @DisplayName("first sight of a subject creates the account and announces it")
+  @DisplayName("lần đầu thấy sub thì tạo account và publish event")
   void firstSightCreatesAccount() {
     UserId id = service.provision(command("Ann@Example.com ", " Ann "));
 
@@ -53,7 +53,7 @@ class ProvisionUserServiceTest {
   }
 
   @Test
-  @DisplayName("a second request for the same subject reuses the account and announces nothing")
+  @DisplayName("request thứ hai cùng sub thì reuse account, không publish event")
   void secondRequestReusesAccount() {
     UserId first = service.provision(command("ann@example.com", "Ann"));
     events.published.clear();
@@ -67,7 +67,7 @@ class ProvisionUserServiceTest {
   }
 
   @Test
-  @DisplayName("a profile change at the provider is written through; the id never moves")
+  @DisplayName("profile đổi trên Keycloak thì được update, id giữ nguyên")
   void profileChangeIsSynced() {
     UserId id = service.provision(command("ann@example.com", "Ann"));
 
@@ -80,7 +80,7 @@ class ProvisionUserServiceTest {
   }
 
   @Test
-  @DisplayName("losing the insert race adopts the winner's account instead of failing")
+  @DisplayName("thua race insert thì adopt account của bên thắng, không throw")
   void concurrentFirstRequestAdoptsTheWinner() {
     User winner =
         User.provision(
@@ -95,12 +95,12 @@ class ProvisionUserServiceTest {
 
     assertThat(resolved).isEqualTo(winner.getId());
     assertThat(users.byId).hasSize(1);
-    // The loser must not announce a registration the winner already announced.
+    // Bên thua không được publish lại event mà bên thắng đã publish.
     assertThat(events.published).isEmpty();
   }
 
   @Test
-  @DisplayName("an insert that neither succeeds nor leaves a row behind is a broken invariant")
+  @DisplayName("insert không được mà cũng không thấy row nào là invariant bị vỡ")
   void vanishedRowFailsLoudly() {
     users.raceWinner =
         User.provision(

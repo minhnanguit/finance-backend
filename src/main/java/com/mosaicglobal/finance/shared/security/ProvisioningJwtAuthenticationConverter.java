@@ -6,12 +6,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
 /**
- * Turns a validated token into an {@link AuthenticatedUserToken}, resolving (and, on first sight,
- * provisioning) the local user in the process.
- *
- * <p>This is the single place where an external subject becomes an internal {@link
- * com.mosaicglobal.finance.shared.kernel.UserId}. Doing it here rather than in a separate filter
- * means there is no ordering to get wrong and no request that can reach a controller unresolved.
+ * Nơi duy nhất {@code sub} được map thành internal id (và provision user nếu lần đầu thấy). Làm ở
+ * converter thay vì filter riêng: không có filter order nào để làm sai, và không request nào tới
+ * được controller khi chưa resolve.
  */
 final class ProvisioningJwtAuthenticationConverter
     implements Converter<Jwt, AbstractAuthenticationToken> {

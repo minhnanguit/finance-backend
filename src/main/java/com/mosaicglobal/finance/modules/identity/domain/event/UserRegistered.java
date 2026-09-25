@@ -5,7 +5,7 @@ import com.mosaicglobal.finance.shared.kernel.DomainEvent;
 import java.time.Instant;
 import java.util.UUID;
 
-/** A new account exists. Routing key {@value #TYPE}. */
+/** Có account mới được tạo. Routing key {@value #TYPE}. */
 public record UserRegistered(
     UUID eventId, Instant occurredAt, UUID userId, String email, String displayName)
     implements DomainEvent {

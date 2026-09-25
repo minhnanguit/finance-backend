@@ -22,7 +22,7 @@ class UserTest {
   }
 
   @Test
-  @DisplayName("provisioning records a registration event exactly once")
+  @DisplayName("provision register đúng một event UserRegistered")
   void provisioningRecordsEvent() {
     User user = provisioned();
 
@@ -31,7 +31,7 @@ class UserTest {
   }
 
   @Test
-  @DisplayName("rehydrating from storage records nothing")
+  @DisplayName("rehydrate từ DB không register event")
   void rehydrateIsSilent() {
     User user =
         User.rehydrate(
@@ -47,7 +47,7 @@ class UserTest {
   }
 
   @Test
-  @DisplayName("an unchanged profile returns the same instance so callers can skip the write")
+  @DisplayName("profile không đổi thì trả về chính instance đó để skip write")
   void unchangedProfileReturnsSameInstance() {
     User user = provisioned();
 
@@ -60,7 +60,7 @@ class UserTest {
   }
 
   @Test
-  @DisplayName("a changed profile yields a new instance keeping id, subject and creation time")
+  @DisplayName("profile đổi thì ra instance mới, giữ nguyên id, sub và createdAt")
   void changedProfileKeepsIdentity() {
     User user = provisioned();
 

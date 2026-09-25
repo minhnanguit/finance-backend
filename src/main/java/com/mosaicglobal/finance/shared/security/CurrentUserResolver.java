@@ -3,14 +3,13 @@ package com.mosaicglobal.finance.shared.security;
 import com.mosaicglobal.finance.shared.kernel.UserId;
 
 /**
- * Maps an authenticated IdP subject to the id this system uses everywhere else.
+ * Map {@code sub} của Keycloak thành internal {@link UserId}.
  *
- * <p>Dependency inversion: the security layer needs the mapping but must not know how users are
- * stored, so it owns this interface and {@code modules.identity} provides the implementation.
+ * <p>Security layer cần mapping này nhưng không được biết user lưu ở đâu, nên interface nằm ở đây
+ * còn {@code modules.identity} implement (dependency inversion).
  *
- * <p>Called once per request, so implementations are expected to cache. Implementations must be
- * idempotent: two concurrent first-ever requests for the same subject must yield the same {@link
- * UserId}, not two accounts.
+ * <p>Được gọi ở mọi request nên implementation phải có cache, và phải idempotent: hai concurrent
+ * request đầu tiên cho cùng một {@code sub} phải ra cùng một {@link UserId}.
  */
 public interface CurrentUserResolver {
 

@@ -48,7 +48,7 @@ class UserPersistenceAdapter implements LoadUserPort, SaveUserPort {
               user.getCreatedAt())
           == 1;
     } catch (DataIntegrityViolationException e) {
-      // Not the subject index (that one is handled by ON CONFLICT) — so the e-mail is taken.
+      // Không phải index của subject (ON CONFLICT đã xử lý) — vậy là duplicate email.
       throw new EmailAlreadyRegisteredException();
     }
   }

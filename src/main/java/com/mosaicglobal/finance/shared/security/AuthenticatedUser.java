@@ -7,10 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * The internal id of the caller. Adapters use this; domain and application never do.
- *
- * <p>Always the id of the row in {@code users}, never the IdP's {@code sub} — business tables key
- * off the former so the IdP can be replaced without migrating them (ADR-004).
+ * Internal id của caller — chỉ adapter dùng. Luôn là id trong {@code users}, không bao giờ là
+ * {@code sub}: business table reference id này để đổi IdP không phải migrate (ADR-004).
  */
 public final class AuthenticatedUser {
 

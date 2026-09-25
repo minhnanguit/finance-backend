@@ -13,10 +13,10 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 
 | Đối tượng | Nơi | Cách |
 |---|---|---|
-| Value object, aggregate | `src/test/…/domain/model/` | JUnit thuần, không Spring. Ví dụ `EmailTest`, `UserTest`, `RefreshTokenTest` |
+| Value object, aggregate | `src/test/…/domain/model/` | JUnit thuần, không Spring. Ví dụ `EmailTest`, `UserTest` |
 | Application service | `src/test/…/application/service/` | Fake in-memory cho mọi port out. Mẫu: `IdentityFakes` |
 | Luật kiến trúc | `src/test/…/architecture/` | Đã có; chỉ sửa khi có ADR |
-| Adapter web/persistence/messaging, luồng end-to-end | `src/integrationTest/` | `TestcontainersConfiguration`, `ApiClient`. Mẫu: `AuthFlowIT`, `UserRegisteredEventIT` |
+| Adapter web/persistence/messaging, luồng end-to-end | `src/integrationTest/` | `TestcontainersConfiguration`, `ApiClient`. Mẫu: `JitProvisioningIT`, `UserRegisteredEventIT`. Token có signature thật lấy từ `TestIdentityProvider` |
 
 ## Quy tắc
 

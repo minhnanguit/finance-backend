@@ -4,12 +4,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 
-/**
- * Single list of endpoints reachable without a token. Everything else needs a bearer JWT.
- *
- * <p>No {@code /api/v1/auth/**} entries any more: logging in happens at Keycloak, not here
- * (ADR-004).
- */
+/** Danh sách duy nhất các endpoint không cần token. */
 final class PublicEndpoints {
 
   private PublicEndpoints() {}

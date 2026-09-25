@@ -8,14 +8,9 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * Rejects a token that was not minted for this API.
- *
- * <p>
- * Without this check any token from the same realm — including one issued to a
- * different client
- * — would be accepted. Keycloak only adds {@code finance-api} to {@code aud}
- * because of an explicit
- * audience mapper in the realm; see {@code deploy/keycloak/README.md}.
+ * Reject token không được cấp cho API này. Thiếu bước này thì token của bất kỳ client nào cùng
+ * realm cũng lọt qua. Keycloak chỉ đưa {@code finance-api} vào {@code aud} nhờ audience mapper
+ * trong realm — xem {@code deploy/keycloak/README.md}.
  */
 final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 

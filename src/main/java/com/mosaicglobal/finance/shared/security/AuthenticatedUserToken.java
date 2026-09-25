@@ -8,11 +8,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
- * Authentication carrying both the validated token and the <em>internal</em> user id.
- *
- * <p>Extends {@link JwtAuthenticationToken} so anything written against the standard
- * resource-server type keeps working, while {@link AuthenticatedUser} can hand callers a {@link
- * UserId} without re-reading claims or hitting the database.
+ * Extend {@link JwtAuthenticationToken} để code viết cho type chuẩn vẫn chạy, đồng thời mang sẵn
+ * internal {@link UserId} — không phải đọc lại claim hay query DB.
  */
 public final class AuthenticatedUserToken extends JwtAuthenticationToken {
 
@@ -24,7 +21,7 @@ public final class AuthenticatedUserToken extends JwtAuthenticationToken {
     this.userId = Objects.requireNonNull(userId, "userId");
   }
 
-  /** The id of the row in {@code users} — not the IdP's {@code sub}. */
+  /** Id trong table {@code users}, không phải {@code sub}. */
   public UserId userId() {
     return userId;
   }

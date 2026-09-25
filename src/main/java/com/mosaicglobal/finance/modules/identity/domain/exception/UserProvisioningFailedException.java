@@ -4,8 +4,8 @@ import com.mosaicglobal.finance.shared.kernel.DomainException;
 import com.mosaicglobal.finance.shared.kernel.ErrorCategory;
 
 /**
- * The account could neither be inserted nor found afterwards. Only reachable if the row vanished
- * between the two statements, so it signals a broken invariant rather than user error.
+ * Insert không được mà đọc lại cũng không thấy — chỉ xảy ra nếu row biến mất giữa hai statement.
+ * Đây là invariant bị vỡ, không phải lỗi của user.
  */
 public class UserProvisioningFailedException extends DomainException {
 

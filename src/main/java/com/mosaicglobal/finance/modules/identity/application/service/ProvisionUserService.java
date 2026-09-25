@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Just-in-time provisioning: the first authenticated request from a subject creates its local
- * account; later requests only refresh the cached profile when the provider reports a change.
+ * JIT provisioning: request đầu tiên của một {@code sub} tạo local account; các lần sau chỉ update
+ * khi Keycloak trả về profile đã đổi.
  */
 @Service
 @Transactional
@@ -53,7 +53,7 @@ class ProvisionUserService implements ProvisionUserUseCase {
       events.publishAll(user.pullDomainEvents());
       return user.getId();
     }
-    // A concurrent request won the race: adopt the account it created rather than failing.
+    // Request khác vừa thắng race: adopt account nó vừa tạo thay vì throw lỗi.
     return loadUser
         .byExternalSubject(subject)
         .map(User::getId)
