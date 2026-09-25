@@ -19,11 +19,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 /**
- * Proves the whole event path: use case → outbox (event_publication) → RabbitMQ → notification
- * consumer → de-duplication → welcome message. Nothing in this path is mocked except the final
- * delivery channel.
+ * Proves the whole event path: JIT provisioning → outbox (event_publication) → RabbitMQ →
+ * notification consumer → de-duplication → welcome message. Nothing in this path is mocked except
+ * the final delivery channel.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import({TestcontainersConfiguration.class, UserRegisteredEventIT.RecordingSenderConfig.class})
@@ -33,13 +35,23 @@ class UserRegisteredEventIT {
   @Autowired RecordingSender sender;
   @Autowired JdbcClient jdbc;
 
+  @DynamicPropertySource
+  static void identityProvider(DynamicPropertyRegistry registry) {
+    TestIdentityProvider idp = TestIdentityProvider.instance();
+    registry.add("app.security.issuer-uri", () -> TestIdentityProvider.ISSUER);
+    registry.add("app.security.jwk-set-uri", idp::jwkSetUri);
+    registry.add("app.security.audience", () -> TestIdentityProvider.AUDIENCE);
+  }
+
   @Test
-  void registrationEventReachesTheNotificationModuleExactlyOnce() {
+  void firstLoginReachesTheNotificationModuleExactlyOnce() {
+    String subject = "sub-" + UUID.randomUUID();
     String email = "event-" + UUID.randomUUID() + "@example.com";
     ApiClient api = new ApiClient(port);
 
-    var response = api.post("/api/v1/auth/register", ApiClient.registerBody(email));
-    assertThat(response.getStatusCode().value()).isEqualTo(201);
+    var response =
+        api.get("/api/v1/me", TestIdentityProvider.instance().validToken(subject, email, "Alice"));
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))

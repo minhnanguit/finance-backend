@@ -4,7 +4,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 
-/** Single list of endpoints reachable without a token. Everything else needs a bearer JWT. */
+/**
+ * Single list of endpoints reachable without a token. Everything else needs a bearer JWT.
+ *
+ * <p>No {@code /api/v1/auth/**} entries any more: logging in happens at Keycloak, not here
+ * (ADR-004).
+ */
 final class PublicEndpoints {
 
   private PublicEndpoints() {}
@@ -13,9 +18,6 @@ final class PublicEndpoints {
       AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
           registry) {
     registry
-        .requestMatchers(
-            HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh")
-        .permitAll()
         .requestMatchers(
             HttpMethod.GET,
             "/actuator/health",

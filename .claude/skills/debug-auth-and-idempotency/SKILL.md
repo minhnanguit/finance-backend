@@ -6,10 +6,31 @@ description: Debug luồng xác thực (JWT RS256, refresh token rotation, 401/4
 # Debug auth & idempotency
 
 Quyết định nền: `docs/adr/ADR-004-auth-keycloak.md`. Code: `shared/security/`, `shared/web/idempotency/`, `modules/identity/`.
+Hạ tầng: `deploy/keycloak/README.md`, `make kc`.
 
-> ⚠️ **Phần auth của skill này đã lỗi thời.** Hệ thống đang migrate sang Keycloak (ADR-004 mới).
-> Mô tả JWT tự phát hành / refresh token rotation bên dưới chỉ còn đúng cho tới khi Phase 2 của
-> `docs/AUTH-KEYCLOAK-PLAN.md` hoàn tất. Phần idempotency vẫn đúng.
+## Luồng auth hiện tại (Keycloak, ADR-004)
+
+Backend **không phát hành token**. Thứ tự khi một request có `Authorization: Bearer ...`:
+
+1. `JwtDecoder` (bean trong `SecurityConfiguration`) tải JWKS từ `app.security.jwk-set-uri`, verify chữ ký.
+2. `JwtValidators.createDefaultWithIssuer` kiểm `iss` == `app.security.issuer-uri` và `exp`.
+3. `AudienceValidator` kiểm `aud` chứa `app.security.audience`.
+4. `ProvisioningJwtAuthenticationConverter` → `CurrentUserResolver.resolve(SubjectClaims)`.
+5. `ProvisioningCurrentUserResolver` tra cache Caffeine theo `sub`; miss thì gọi `ProvisionUserUseCase`.
+6. `AuthenticatedUser.requireCurrent()` trả về **`users.id` nội bộ**, không phải `sub`.
+
+### 401 thì soi theo thứ tự này
+
+| Triệu chứng | Nguyên nhân hay gặp |
+|---|---|
+| 401 với mọi token | `aud` thiếu `finance-api` → audience mapper trong realm bị xoá |
+| 401 sau khi đổi `KC_HOSTNAME` | `iss` trong token cũ ≠ `app.security.issuer-uri` |
+| App khởi động lỗi / treo lúc gọi API | `jwk-set-uri` không tới được từ tiến trình này (nhớ: khác `issuer-uri` ở local) |
+| Đổi tên/email trên Keycloak mà `/me` chưa đổi | Cache `app.identity.subject-cache-ttl` (mặc định 10 phút) chưa hết hạn |
+| Tạo ra 2 dòng `users` cho cùng 1 người | Sai: `ux_users_external_subject` phải chặn. Kiểm `ON CONFLICT` trong `UserJpaRepository` |
+
+Không còn `/api/v1/auth/*`, không còn `refresh_tokens`, không còn `password_hash`.
+Đăng nhập, đổi mật khẩu, reset mật khẩu đều diễn ra ở Keycloak — xem `deploy/keycloak/README.md`.
 
 ## Bản đồ luồng auth
 

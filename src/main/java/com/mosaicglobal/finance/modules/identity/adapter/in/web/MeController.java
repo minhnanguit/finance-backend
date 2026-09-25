@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 class MeController implements MeApi {
 
   private final GetUserProfileUseCase userProfile;
-  private final AuthWebMapper mapper;
+  private final UserWebMapper mapper;
 
-  MeController(GetUserProfileUseCase userProfile, AuthWebMapper mapper) {
+  MeController(GetUserProfileUseCase userProfile, UserWebMapper mapper) {
     this.userProfile = userProfile;
     this.mapper = mapper;
   }

@@ -8,7 +8,7 @@ Modular monolith (Spring Modulith) phục vụ app Finance mobile.
 - Group: `com.mosaicglobal.finance` · version `0.1.0-SNAPSHOT`
 - Kiến trúc đã **chốt** ở `../ARCHITECTURE.md` (repo-level, tiếng Việt). Không tự đổi.
 - Hợp đồng API `api/openapi.yaml` là nguồn sự thật duy nhất; `finance-mobile` pin bản này.
-- Module hiện có: `identity` (reference producer), `notification` (reference consumer).
+- Module hiện có: `identity` (user local + JIT provisioning từ Keycloak), `notification` (reference consumer).
 - Ngoài repo này chỉ còn `finance-mobile` (Kotlin Multiplatform) — **repo riêng, không sửa từ đây**.
 
 ## 2. Commands
@@ -49,14 +49,15 @@ src/main/java/com/mosaicglobal/finance
 │  │                                  ErrorCategory, Ensure — Java thuần, zero framework
 │  ├─ web/                            RFC 7807 problem, cursor paging, idempotency/ (Redis filter)
 │  ├─ persistence/                    AbstractJpaEntity (id, version, audit, soft delete)
-│  ├─ security/                       resource server stateless, RS256 key config, AuthenticatedUser
+│  ├─ security/                       resource server thuần (verify JWT Keycloak), CurrentUserResolver SPI,
+│                                    AudienceValidator, AuthenticatedUser (trả users.id nội bộ)
 │  └─ messaging/                      FinanceExchanges, ConsumerQueues, EventEnvelope,
 │                                     EventExternalizationConfig, EventDeduplicator, InboundEvents
 └─ modules/<name>/                    domain → application → adapter (xem .codex/rules/architecture-boundaries.md)
-src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity)
+src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity), V3 (external IdP)
 src/test/…/architecture               ArchitectureRulesTest (8 luật), ModularityTest
 src/integrationTest                   Testcontainers end-to-end
-docs/adr/ADR-001..004                 quyết định đã chốt · docs/module-template.md
+docs/adr/ADR-001..004                 quyết định đã chốt (ADR-004 = Keycloak) · docs/module-template.md
 ```
 
 Luồng một event: `@Transactional use case` → `DomainEventPublisher.publishAll` → outbox (`event_publication`, cùng transaction) → sau commit externalize sang exchange `finance.events` → consumer queue → `EventDeduplicator.executeOnce`.

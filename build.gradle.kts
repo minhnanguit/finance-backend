@@ -45,6 +45,8 @@ dependencies {
 
     // Cache / idempotency
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    // In-memory cache for the subject -> user id mapping on the authentication hot path
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     // Messaging
     implementation("org.springframework.boot:spring-boot-starter-amqp")

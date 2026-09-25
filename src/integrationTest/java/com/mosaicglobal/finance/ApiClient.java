@@ -1,6 +1,5 @@
 package com.mosaicglobal.finance;
 
-import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -12,9 +11,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 /** Small HTTP helper for integration tests: never throws on 4xx/5xx, parses JSON bodies. */
 final class ApiClient {
-
-  static final Map<String, Object> DEVICE =
-      Map.of("deviceId", "it-device-0001", "deviceName", "IT Pixel", "platform", "ANDROID");
 
   private final RestClient http;
   private final JsonMapper json = JsonMapper.builder().build();
@@ -53,25 +49,5 @@ final class ApiClient {
 
   JsonNode json(ResponseEntity<String> response) {
     return json.readTree(response.getBody());
-  }
-
-  static Map<String, Object> registerBody(String email) {
-    return Map.of(
-        "email",
-        email,
-        "password",
-        "correct horse battery",
-        "displayName",
-        "Alice",
-        "device",
-        DEVICE);
-  }
-
-  static Map<String, Object> loginBody(String email, String password) {
-    return Map.of("email", email, "password", password, "device", DEVICE);
-  }
-
-  static Map<String, Object> refreshBody(String refreshToken) {
-    return Map.of("refreshToken", refreshToken, "deviceId", DEVICE.get("deviceId"));
   }
 }
