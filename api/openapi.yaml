@@ -26,10 +26,9 @@ servers:
 tags:
   - name: me
     description: Current user
-# Hai phần tử = điều kiện OR. Cả hai cùng mô tả một bearer token Keycloak:
-# `keycloak` để tool tự discover issuer, `bearerAuth` để paste token thủ công vào Swagger UI khi test local.
+# Chỉ khai http bearer. KHÔNG thêm scheme `openIdConnect`: generator Kotlin multiplatform 7.14 sinh code
+# sai cú pháp cho scheme đó (`mapOf(, ...`), làm gãy build của finance-mobile.
 security:
-  - keycloak: [openid]
   - bearerAuth: []
 paths:
   /api/v1/me:
@@ -48,15 +47,13 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 components:
   securitySchemes:
-    keycloak:
-      type: openIdConnect
-      openIdConnectUrl: http://localhost:8081/realms/finance/.well-known/openid-configuration
-      description: Token issuer. Môi trường khác thì đổi host theo `KC_HOSTNAME`.
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Access token do Keycloak issue cho client `finance-mobile`.
+      description: |
+        Access token do Keycloak issue cho client `finance-mobile`.
+        Discovery (local): http://localhost:8081/realms/finance/.well-known/openid-configuration
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
