@@ -47,7 +47,7 @@ Module documentation (C4 diagrams, module canvases) is written to `build/spring-
 
 ```
 api/openapi.yaml                 contract – single source of truth, published per release tag
-src/main/java/com/mosaicglobal/finance
+src/main/java/com/uit/finance
 ├─ FinanceApplication            @Modulithic entry point, Clock bean
 ├─ shared/
 │  ├─ kernel/                    Money, UserId, DomainEvent, AggregateRoot, DomainException – pure Java

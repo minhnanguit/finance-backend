@@ -1,0 +1,78 @@
+package com.uit.finance.modules.identity.domain.model;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.uit.finance.modules.identity.domain.event.UserRegistered;
+import com.uit.finance.shared.kernel.UserId;
+import java.time.Instant;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+class UserTest {
+
+  private static final Instant NOW = Instant.parse("2026-09-20T10:15:30Z");
+
+  private static User provisioned() {
+    return User.provision(
+        UserId.newId(),
+        ExternalSubject.of("keycloak-sub-1"),
+        Email.of("ann@example.com"),
+        com.uit.finance.modules.identity.domain.model.DisplayName.of("Ann"),
+        NOW);
+  }
+
+  @Test
+  @DisplayName("provision register đúng một event UserRegistered")
+  void provisioningRecordsEvent() {
+    User user = provisioned();
+
+    assertThat(user.pullDomainEvents()).singleElement().isInstanceOf(UserRegistered.class);
+    assertThat(user.pullDomainEvents()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("rehydrate từ DB không register event")
+  void rehydrateIsSilent() {
+    User user =
+        User.rehydrate(
+            UserId.newId(),
+            ExternalSubject.of("keycloak-sub-1"),
+            Email.of("ann@example.com"),
+            com.uit.finance.modules.identity.domain.model.DisplayName.of("Ann"),
+            UserStatus.ACTIVE,
+            NOW);
+
+    assertThat(user.pullDomainEvents()).isEmpty();
+    assertThat(user.isActive()).isTrue();
+  }
+
+  @Test
+  @DisplayName("profile không đổi thì trả về chính instance đó để skip write")
+  void unchangedProfileReturnsSameInstance() {
+    User user = provisioned();
+
+    User same =
+        user.withProfile(
+            Email.of("ann@example.com"),
+            com.uit.finance.modules.identity.domain.model.DisplayName.of("Ann"));
+
+    assertThat(same).isSameAs(user);
+  }
+
+  @Test
+  @DisplayName("profile đổi thì ra instance mới, giữ nguyên id, sub và createdAt")
+  void changedProfileKeepsIdentity() {
+    User user = provisioned();
+
+    User updated =
+        user.withProfile(
+            Email.of("new@example.com"),
+            com.uit.finance.modules.identity.domain.model.DisplayName.of("Ann New"));
+
+    assertThat(updated).isNotSameAs(user);
+    assertThat(updated.getId()).isEqualTo(user.getId());
+    assertThat(updated.getExternalSubject()).isEqualTo(user.getExternalSubject());
+    assertThat(updated.getCreatedAt()).isEqualTo(NOW);
+    assertThat(updated.getEmail().value()).isEqualTo("new@example.com");
+  }
+}

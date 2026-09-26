@@ -5,7 +5,7 @@
 Modular monolith (Spring Modulith) phục vụ app Finance mobile.
 **Java 21 · Spring Boot 4.1.1 · Spring Modulith 2.1.1 · PostgreSQL · Redis · RabbitMQ · Gradle (Kotlin DSL).**
 
-- Group: `com.mosaicglobal.finance` · version `0.1.0-SNAPSHOT`
+- Group: `com.uit.finance` · version `0.1.0-SNAPSHOT`
 - Kiến trúc đã **chốt** ở `../ARCHITECTURE.md` (repo-level, tiếng Việt). Không tự đổi.
 - Hợp đồng API `api/openapi.yaml` là nguồn sự thật duy nhất; `finance-mobile` pin bản này.
 - Module hiện có: `identity` (user local + JIT provisioning từ Keycloak), `notification` (reference consumer).
@@ -42,7 +42,7 @@ CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTes
 
 ```
 api/openapi.yaml                      hợp đồng — sửa Ở ĐÂY TRƯỚC, mọi thứ khác theo sau
-src/main/java/com/mosaicglobal/finance
+src/main/java/com/uit/finance
 ├─ FinanceApplication                 @Modulithic entry point + Clock bean
 ├─ shared/                            nền tảng dùng chung (KHÔNG phải module nghiệp vụ)
 │  ├─ kernel/                         Money, UserId, DomainEvent, AggregateRoot, DomainException,
