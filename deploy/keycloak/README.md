@@ -52,6 +52,12 @@ ADR-004 quyết định #3 cấm dùng. Đừng bật để "cho tiện test".
 
 ## Hostname
 
+**Có tunnel** (`make tunnel`): `KC_HOSTNAME` = URL HTTPS `*.trycloudflare.com` (lấy từ `deploy/.env`), dùng
+chung cho emulator, simulator và máy thật. Caddy (`deploy/edge/Caddyfile`) chỉ public `/realms/*` và
+`/resources/*`; `/admin` và realm `master` trả 404 — Admin Console vẫn chỉ ở `http://localhost:8081/admin`.
+
+**Không tunnel** (mặc định):
+
 `KC_HOSTNAME=http://10.0.2.2:8081` đặt ở `docker-compose.yml`, **không** ở file này.
 Issuer nằm trong token nên hostname phải cố định từ dev. `10.0.2.2` là host loopback nhìn từ
 Android emulator, nên token phát ra dùng được cho cả app lẫn backend.

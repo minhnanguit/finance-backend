@@ -1,10 +1,11 @@
 .gradle/
 build/
 bin/
-out/
+/out/
 *.log
 .idea/
 *.iml
 .vscode/
 .DS_Store
 .env
+deploy/.tunnel/

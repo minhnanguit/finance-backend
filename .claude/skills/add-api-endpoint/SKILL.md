@@ -28,7 +28,7 @@ Bắt buộc đọc trước: `.claude/rules/contract-first-api.md`, `.claude/ru
 ```
 
 - Endpoint không cần token → thêm `security: []` **và** khai trong `shared/security/PublicEndpoints`.
-- `tags` quyết định tên interface (`useTags=true`): tag `auth` → `AuthApi`.
+- `tags` quyết định tên interface (`useTags=true`): tag `me` → `MeApi`.
 - Tiền: integer minor units + currency ISO-4217. Không float.
 
 ### 2. Sinh interface
@@ -79,7 +79,7 @@ Ném `DomainException` subclass với `ErrorCategory` + code `<module>.<reason>`
 ```bash
 make fmt
 make test
-make itest        # thêm IT trong src/integrationTest, mẫu AuthFlowIT + ApiClient
+make itest        # thêm IT trong src/integrationTest, mẫu JitProvisioningIT + ApiClient + TestIdentityProvider (token có signature thật)
 ```
 
 ## Checklist trước khi báo xong

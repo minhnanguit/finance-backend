@@ -35,9 +35,9 @@ spring:
       observation-enabled: true
     listener:
       simple:
-        acknowledge-mode: auto        # container acks after the listener succeeds (not broker auto-ack)
+        acknowledge-mode: auto # container acks after the listener succeeds (not broker auto-ack)
         prefetch: 20
-        default-requeue-rejected: false   # failures go to the DLX -> <queue>.parked
+        default-requeue-rejected: false # failures go to the DLX -> <queue>.parked
         observation-enabled: true
         retry:
           enabled: true
@@ -52,7 +52,7 @@ spring:
       completion-mode: archive
       jdbc:
         schema-initialization:
-          enabled: false            # schema is owned by Flyway (V1)
+          enabled: false # schema is owned by Flyway (V1)
     republish-outstanding-events-on-restart: true
 
 server:
@@ -75,20 +75,22 @@ management:
 
 springdoc:
   api-docs:
-    enabled: false                  # the contract is authored, not derived from code
+    enabled: false # the contract is authored, not derived from code
   swagger-ui:
     url: /openapi.yaml
     path: /swagger-ui.html
 
 app:
   security:
-    jwt:
-      issuer: finance-backend
-      access-token-ttl: 15m
-      private-key-pem: ${JWT_PRIVATE_KEY_PEM:}
-      public-key-pem: ${JWT_PUBLIC_KEY_PEM:}
+    # Keycloak là IdP duy nhất. App này chỉ verify token, không issue token.
+    # issuer-uri là giá trị nằm TRONG token; ở local nó là địa chỉ emulator thấy được,
+    # còn process này fetch key qua jwk-set-uri trên localhost. Hai giá trị cố ý khác nhau.
+    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://10.0.2.2:8081/realms/finance}
+    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/finance/protocol/openid-connect/certs}
+    audience: ${KEYCLOAK_AUDIENCE:finance-api}
   identity:
-    refresh-token-ttl: 30d
+    subject-cache-ttl: 10m
+    subject-cache-size: 10000
   idempotency:
     ttl: 24h
     in-progress-ttl: 30s

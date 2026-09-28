@@ -29,7 +29,7 @@ Dùng **Keycloak self-host** làm IdP duy nhất. Backend **không còn phát h�
 | Realm | `finance` |
 | Client mobile | `finance-mobile` — public, standard flow, PKCE S256 bắt buộc |
 | Audience | `finance-api` (phải thêm **audience mapper** trong realm, Keycloak không tự bỏ vào) |
-| Redirect URI | `com.mosaicglobal.finance://oauth/callback` (thêm App Links / Universal Links sau) |
+| Redirect URI | `com.uit.finance://oauth/callback` (thêm App Links / Universal Links sau) |
 | Access token TTL | 5 phút |
 | Refresh token TTL | 30 ngày, bật rotation (`revokeRefreshToken`, `refreshTokenMaxReuse=0`) |
 | Khoá định danh | claim `sub`. **Không dùng email** — email đổi được |

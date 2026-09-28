@@ -1,6 +1,6 @@
 # Rule — Contract-first API
 
-`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `1.0.0`) là **nguồn sự thật duy nhất**.
+`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `2.0.0`) là **nguồn sự thật duy nhất**.
 
 ## Thứ tự bất biến
 
@@ -24,9 +24,9 @@ Cấm: viết `@GetMapping` / `@PostMapping` thủ công cho endpoint nghiệp v
 
 ## Controller
 
-- Đặt ở `modules/<name>/adapter/in/web/`, **package-private** (`class AuthController implements AuthApi`).
+- Đặt ở `modules/<name>/adapter/in/web/`, **package-private** (`class MeController implements MeApi`).
 - Mỏng: map DTO ↔ Command, gọi use case, trả `ResponseEntity`. Không logic nghiệp vụ, không `@Transactional`.
-- Mapper web viết tay (`AuthWebMapper`) — MapStruct chỉ chấp nhận cho DTO↔DTO phẳng.
+- Mapper web viết tay (`UserWebMapper`) — MapStruct chỉ chấp nhận cho DTO↔DTO phẳng.
 - Tham số `UUID idempotencyKey` có trong signature chỉ vì contract mô tả nó; giá trị do `IdempotencyFilter` xử lý, controller bỏ qua.
 
 ## Phát hành

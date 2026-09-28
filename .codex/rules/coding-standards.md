@@ -32,13 +32,13 @@ Mặc định **package-private**. Chỉ `public` khi thật sự là API vượ
 ```java
 @Service
 @Transactional
-class RegisterUserService implements RegisterUserUseCase {
+class ProvisionUserService implements ProvisionUserUseCase {
   // constructor injection, field final, không @Autowired
 }
 ```
 
 - Một use case = một interface trong `port/in` + record `Command` lồng bên trong.
-- Port out hẹp theo use case (`LoadUserPort`, `SaveUserPort`, `PasswordHasherPort`) — **cấm** `Repository<T>` generic.
+- Port out hẹp theo use case (`LoadUserPort`, `SaveUserPort`) — **cấm** `Repository<T>` generic.
 - Thời gian lấy từ bean `java.time.Clock` (inject), không `Instant.now()` rải rác.
 - Publish event trong transaction: `events.publishAll(aggregate.pullDomainEvents())`.
 

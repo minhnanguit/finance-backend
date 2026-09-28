@@ -76,12 +76,12 @@
       "serviceAccountsEnabled": false,
       "frontchannelLogout": true,
       "redirectUris": [
-        "com.mosaicglobal.finance://oauth/callback"
+        "com.uit.finance://oauth/callback"
       ],
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "com.mosaicglobal.finance://oauth/logout",
+        "post.logout.redirect.uris": "com.uit.finance://oauth/logout",
         "access.token.lifespan": "300",
         "client.session.idle.timeout": "0",
         "client.session.max.lifespan": "0"
