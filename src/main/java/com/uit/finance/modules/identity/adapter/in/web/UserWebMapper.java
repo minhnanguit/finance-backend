@@ -7,8 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 class UserWebMapper {
 
-  com.uit.finance.api.v1.model.UserProfile toProfile(
-      GetUserProfileUseCase.UserProfile profile) {
+  com.uit.finance.api.v1.model.UserProfile toProfile(GetUserProfileUseCase.UserProfile profile) {
     return new com.uit.finance.api.v1.model.UserProfile()
         .id(profile.id().value())
         .email(profile.email())

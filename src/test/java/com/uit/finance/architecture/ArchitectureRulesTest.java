@@ -17,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * The eight Clean Architecture rules from ARCHITECTURE.md §4.3, executable. A violation fails the
  * build.
  */
-@AnalyzeClasses(
-    packages = "com.uit.finance",
-    importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "com.uit.finance", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureRulesTest {
 
   private static final String DOMAIN = "..domain..";

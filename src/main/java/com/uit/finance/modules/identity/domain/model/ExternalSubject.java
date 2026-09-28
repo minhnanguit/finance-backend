@@ -4,8 +4,8 @@ import com.uit.finance.shared.kernel.Ensure;
 
 /**
  * Claim {@code sub} của Keycloak — link duy nhất giữa local user và Keycloak. Business table không
- * bao giờ reference nó mà reference {@link com.uit.finance.shared.kernel.UserId}, để đổi
- * IdP không phải migrate (ADR-004).
+ * bao giờ reference nó mà reference {@link com.uit.finance.shared.kernel.UserId}, để đổi IdP không
+ * phải migrate (ADR-004).
  */
 public record ExternalSubject(String value) {
 
