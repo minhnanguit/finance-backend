@@ -56,9 +56,12 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
-      # QUAN TRỌNG: issuer nằm trong token nên hostname phải CỐ ĐỊNH ngay từ dev.
-      # 10.0.2.2 là host loopback nhìn từ Android emulator -> token được issue ra hợp lệ cho cả app lẫn backend.
-      KC_HOSTNAME: http://10.0.2.2:8081
+      # QUAN TRỌNG: issuer nằm trong token — đổi hostname là mọi token đang có mất hiệu lực.
+      # Mặc định: địa chỉ Android emulator thấy host. `make tunnel` ghi KC_PUBLIC_URL (HTTPS của Cloudflare
+      # Tunnel) vào deploy/.env và recreate container — cả emulator, simulator lẫn máy thật dùng chung.
+      KC_HOSTNAME: ${KC_PUBLIC_URL:-http://10.0.2.2:8081}
+      # Đứng sau Caddy/Cloudflare: tin X-Forwarded-* để lấy đúng scheme và IP client.
+      KC_PROXY_HEADERS: xforwarded
       # Cho phép backend chạy trên host gọi backchannel qua localhost:8081 mà không lệch hostname.
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       # 10.0.2.2 chỉ routable TỪ TRONG emulator. Không có dòng này thì Admin Console mở
@@ -94,6 +97,30 @@ services:
     ports:
       - "1025:1025"    # SMTP
       - "8025:8025"    # web UI  http://localhost:8025
+
+  # ---------- Public HTTPS qua Cloudflare Quick Tunnel (profile "tunnel", bật bằng `make tunnel`) ----------
+  edge:
+    image: caddy:2.11.4-alpine
+    profiles: [tunnel]
+    environment:
+      # Backend chạy trên host bằng `make run`, không nằm trong compose.
+      BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-host.docker.internal:8080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux; Docker Desktop / OrbStack đã có sẵn
+    volumes:
+      - ./edge/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: [tunnel]
+    # Quick Tunnel: không cần tài khoản, domain *.trycloudflare.com miễn phí — nhưng URL ĐỔI mỗi lần
+    # container khởi động lại và không có SLA. Chỉ dùng cho dev; production dùng named tunnel + domain riêng.
+    command: ["tunnel", "--no-autoupdate", "--url", "http://edge:80"]
+    depends_on:
+      - edge
 
 volumes:
   postgres-data:

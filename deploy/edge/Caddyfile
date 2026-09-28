@@ -1,0 +1,34 @@
+# Edge reverse proxy đứng sau Cloudflare Tunnel: MỘT hostname HTTPS cho cả Keycloak lẫn API.
+# TLS do Cloudflare terminate; Caddy nhận http nội bộ nên tắt auto HTTPS.
+{
+	auto_https off
+	servers {
+		# Tin X-Forwarded-* từ cloudflared (mạng docker nội bộ) để Keycloak thấy đúng scheme https
+		# và IP thật của client (brute force detection tính theo IP).
+		trusted_proxies static private_ranges
+	}
+}
+
+# Upstream + cổng nghe lấy từ env để cùng file chạy được cả trong docker lẫn native (deploy/tunnel.sh).
+{$EDGE_LISTEN::80} {
+	# Keycloak khuyến nghị chỉ public /realms và /resources. Admin console và realm master
+	# KHÔNG bao giờ lộ ra internet — chỉ vào qua localhost:8081.
+	@blocked path /admin /admin/* /realms/master /realms/master/*
+	handle @blocked {
+		respond 404
+	}
+
+	@keycloak path /realms/* /resources/*
+	handle @keycloak {
+		reverse_proxy {$KEYCLOAK_UPSTREAM:keycloak:8080}
+	}
+
+	@api path /api/* /actuator/health /actuator/health/*
+	handle @api {
+		reverse_proxy {$BACKEND_UPSTREAM:host.docker.internal:8080}
+	}
+
+	handle {
+		respond 404
+	}
+}

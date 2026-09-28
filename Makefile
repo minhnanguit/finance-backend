@@ -6,13 +6,20 @@ COMPOSE  := docker compose -f deploy/docker-compose.yml
 GRADLE   := ./gradlew
 BASE_URL ?= http://localhost:8080
 
+# Khi `make tunnel` đang bật, deploy/.env chứa KC_PUBLIC_URL (HTTPS của Cloudflare Tunnel). Backend phải
+# validate đúng issuer đó. Chỉ export khi có giá trị: biến rỗng sẽ đè mất default trong application.yml.
+-include deploy/.env
+ifneq ($(strip $(KC_PUBLIC_URL)),)
+export KEYCLOAK_ISSUER_URI := $(KC_PUBLIC_URL)/realms/finance
+endif
+
 .DEFAULT_GOAL := help
-.PHONY: help up down reset ps logs run health swagger rabbit kc kc-db mail test itest build fmt lint api clean
+.PHONY: help up down reset ps logs run health swagger rabbit kc kc-db mail tunnel tunnel-off tunnel-url test itest build fmt lint api clean
 
 help: ## Liệt kê mọi lệnh make của repo này
 	@echo "finance-backend — các lệnh có sẵn:"
 	@grep -E '^[a-z][a-zA-Z_-]*:.*## ' $(MAKEFILE_LIST) \
-	  | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-9s\033[0m %s\n", $$1, $$2}'
+	  | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
 
 # ---------- Hạ tầng (Docker) ----------
 
@@ -58,6 +65,17 @@ kc-db: ## Tạo database `keycloak` thủ công — chỉ cần khi volume postg
 	  -c "CREATE USER keycloak WITH PASSWORD 'keycloak';" \
 	  -c "CREATE DATABASE keycloak OWNER keycloak;" || true
 	@echo "Xong. Nếu báo 'already exists' thì database đã có sẵn, không sao."
+
+# ---------- Public HTTPS (Cloudflare Quick Tunnel) ----------
+
+tunnel: ## Bật HTTPS công khai *.trycloudflare.com (Caddy + cloudflared trong docker); URL đổi mỗi lần bật lại
+	@deploy/tunnel.sh up
+
+tunnel-off: ## Tắt tunnel, Keycloak quay về http://10.0.2.2:8081
+	@deploy/tunnel.sh down
+
+tunnel-url: ## In URL tunnel đang dùng
+	@deploy/tunnel.sh url
 
 # ---------- Kiểm thử & chất lượng ----------
 
