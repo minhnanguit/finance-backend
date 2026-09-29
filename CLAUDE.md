@@ -59,7 +59,7 @@ src/main/java/com/uit/finance
 src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity), V3 (external IdP)
 src/test/…/architecture               ArchitectureRulesTest (8 luật), ModularityTest
 src/integrationTest                   Testcontainers end-to-end
-docs/adr/ADR-001..004                 quyết định đã chốt (ADR-004 = Keycloak) · docs/module-template.md
+docs/adr/ADR-001..006                 quyết định (004 = Keycloak, 005 = ledger, 006 = bảo mật dữ liệu; 002 = sync) · docs/module-template.md
 ```
 
 Luồng một event: `@Transactional use case` → `DomainEventPublisher.publishAll` → outbox (`event_publication`, cùng transaction) → sau commit externalize sang exchange `finance.events` → consumer queue → `EventDeduplicator.executeOnce`.
