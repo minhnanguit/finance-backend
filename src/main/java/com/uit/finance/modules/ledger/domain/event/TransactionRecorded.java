@@ -1,6 +1,6 @@
 package com.uit.finance.modules.ledger.domain.event;
 
-import com.uit.finance.modules.ledger.domain.model.Transaction;
+import com.uit.finance.modules.ledger.domain.model.transaction.Transaction;
 import com.uit.finance.shared.kernel.DomainEvent;
 import java.time.Instant;
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
 package com.uit.finance.modules.ledger.domain.exception;
 
-import com.uit.finance.modules.ledger.domain.model.LedgerEntity;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerEntity;
 import com.uit.finance.shared.kernel.ErrorCategory;
 
 /** Vượt số ví hoặc danh mục tối đa của một user (ADR-006 B4). */
