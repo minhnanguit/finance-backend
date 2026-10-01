@@ -1,6 +1,6 @@
 # ADR-002 – Offline-first sync: cursor theo user, last-write-wins, xoá luôn thắng
 
-**Status:** accepted (design) · 2026-09-12 · **sửa đổi 2026-09-29** (proposed) cùng plan `docs/LEDGER-PLAN.md` Phase 3–4
+**Status:** accepted (design) · 2026-09-12 · **sửa đổi 2026-09-29**, accepted 2026-09-30, cùng plan `docs/LEDGER-PLAN.md` Phase 3–4
 
 > **Thay đổi so với bản 2026-09-12:** cursor là `change_seq` theo từng user thay cho `updated_at` (§2) · 1 cursor cho mọi entity thay cho 1 cursor mỗi scope (§4) · thêm `CONFLICT`/`RETRY` và luật xoá thắng (§3) · thêm SPI `SyncHandler` (§6).
 

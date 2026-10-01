@@ -1,6 +1,6 @@
 # ADR-005 – Mô hình dữ liệu ledger: ví, danh mục, giao dịch
 
-**Status:** proposed · 2026-09-29 · triển khai theo `docs/LEDGER-PLAN.md` (root repo) Phase 1–2
+**Status:** accepted · 2026-09-30 · triển khai theo `docs/LEDGER-PLAN.md` (root repo) Phase 1–2
 
 ## Context
 
@@ -49,7 +49,8 @@ Cột hệ thống (mọi bảng, chỉ server điền, ADR-006 B3):
 | `category_id` | Bắt buộc khi `INCOME`/`EXPENSE`, bắt buộc null khi `TRANSFER` |
 | `currency` (giao dịch) | Luôn bằng tiền tệ của ví. Client vẫn gửi để server đối chiếu |
 | `categories.kind` | **Bất biến** sau khi tạo |
-| `categories.parent_id` | Tối đa 2 cấp: cha phải là gốc (`parent_id IS NULL`), cùng `kind`, cùng user |
+| `categories.parent_id` | Tối đa 2 cấp: cha phải là gốc (`parent_id IS NULL`), cùng `kind`, cùng user. Danh mục đang có con thì không thành con |
+| `categories.icon`, `color` | Không bắt buộc. Mobile tự chọn icon/màu mặc định khi trống |
 
 ### 3. Luật domain
 
@@ -60,7 +61,7 @@ Cột hệ thống (mọi bảng, chỉ server điền, ADR-006 B3):
 | Loại danh mục khớp loại giao dịch (`INCOME` ↔ `INCOME`) | `ledger.category_kind_mismatch` | VALIDATION |
 | Tiền tệ giao dịch = tiền tệ ví | `ledger.currency_mismatch` | VALIDATION |
 | Chuyển tiền: 2 ví khác nhau, cùng tiền tệ | `ledger.invalid_transfer` | VALIDATION |
-| Không ghi vào ví/danh mục đã archive | `ledger.archived` | BUSINESS_RULE |
+| Không **gắn mới** giao dịch hoặc danh mục con vào ví/danh mục đã archive. Giao dịch cũ vẫn sửa được (vd sửa ghi chú) | `ledger.archived` | BUSINESS_RULE |
 | Không đổi tiền tệ ví đã có giao dịch (D8) | `ledger.currency_locked` | BUSINESS_RULE |
 | Không xoá ví/danh mục đã có giao dịch (D7) | `ledger.in_use` | BUSINESS_RULE |
 | Không đổi `kind` của danh mục | `ledger.kind_immutable` | VALIDATION |
@@ -68,8 +69,12 @@ Cột hệ thống (mọi bảng, chỉ server điền, ADR-006 B3):
 | Field sai định dạng hoặc ngoài giới hạn (bảng dưới). Kèm tên field, **không** kèm giá trị (B8) | `ledger.invalid_field` | VALIDATION |
 | Vượt số ví/danh mục tối đa mỗi user | `ledger.limit_exceeded` | BUSINESS_RULE |
 | Ví/danh mục không phải của user, hoặc đã xoá (ADR-006 B1, B2) | `ledger.not_found` | NOT_FOUND |
+| Ví/danh mục **được trỏ tới** chưa thấy: chưa sync tới, hoặc của user khác. Sync đổi thành `RETRY` | `ledger.reference_pending` | BUSINESS_RULE |
+| Sửa, archive hay tạo lại bản ghi đã xoá (xoá luôn thắng, ADR-002 S4). Sync đổi thành `CONFLICT` | `ledger.deleted` | CONFLICT |
 
-"Đã có giao dịch" = có ít nhất 1 giao dịch **chưa xoá** trỏ vào (kể cả `DRAFT`, kể cả qua `counter_account_id`).
+"Đã có giao dịch" = có ít nhất 1 giao dịch **chưa xoá** trỏ vào (kể cả `DRAFT`, kể cả qua `counter_account_id`). Với danh mục, còn danh mục con chưa xoá cũng tính là đang dùng.
+
+Tạo lại cùng id (client gửi lại) là no-op, trả bản đang có. Id đã thuộc user khác thì `ledger.not_found`, không ghi đè.
 
 ### 4. Giới hạn (ADR-006 B4)
 
@@ -97,7 +102,7 @@ chỉ tính giao dịch: deleted_at IS NULL AND status = CONFIRMED
 
 - `DRAFT` không vào số dư. Chuyển `DRAFT` → `CONFIRMED` là lúc số dư đổi.
 - Số dư được phép âm. App ghi lại thực tế, không chặn chi quá.
-- Tổng nhiều ví khác tiền tệ không cộng thẳng (ADR-001): trả tổng theo từng tiền tệ.
+- Tổng nhiều ví khác tiền tệ không cộng thẳng (ADR-001): trả tổng theo từng tiền tệ, **bỏ qua ví đã archive** (ví archive đã bị ẩn khỏi danh sách).
 - Cùng một công thức ở server (`GetBalances`, SQL SUM) và mobile (SQLite SUM). Test ở 2 phía dùng chung bộ ca.
 
 ### 6. Danh mục mặc định (D9)

@@ -1,6 +1,6 @@
 # ADR-006 – Bảo mật dữ liệu sổ thu chi: cô lập theo user, giới hạn, mã hoá trên máy
 
-**Status:** proposed · 2026-09-29 · làm trong từng phase của `docs/LEDGER-PLAN.md`, không để dành
+**Status:** accepted · 2026-09-30 · làm trong từng phase của `docs/LEDGER-PLAN.md`, không để dành
 
 ## Context
 
@@ -41,7 +41,7 @@ Thước đo: **OWASP API Security Top 10 (2023)** cho backend, **OWASP MASVS v2
 | Port out ledger | **Mọi method trong `ledger.application.port.out` có tham số `UserId`**. ArchUnit **luật #10** bắt, quên là build fail |
 | Spring Data | Không dùng `findById(id)` trần. Mọi query là `findByIdAndUserId`, `...WhereUserId...` |
 | Upsert | `INSERT ... ON CONFLICT (id) DO UPDATE SET ... WHERE <bảng>.user_id = :me`. 0 dòng bị ảnh hưởng = id của người khác → `REJECTED ledger.not_found`, **không ghi đè** |
-| Tham chiếu ví/danh mục | Load theo `(id, user_id)`. Không thấy → `RETRY`, **giống hệt** trường hợp ví chưa sync tới. Kẻ xấu không phân biệt được "chưa tới" với "của người khác" |
+| Tham chiếu ví/danh mục | Load theo `(id, user_id)`. Không thấy → `ledger.reference_pending` → `RETRY`, **giống hệt** trường hợp ví chưa sync tới (cùng mã, cùng message). Kẻ xấu không phân biệt được "chưa tới" với "của người khác" |
 | Tham chiếu tới bản ghi của mình đã xoá | `REJECTED ledger.not_found`. Không lộ gì vì chỉ áp cho dữ liệu của chính user |
 | Pull | `WHERE user_id = :me AND change_seq > :since`. Không có tham số nào khác chọn user |
 

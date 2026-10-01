@@ -8,7 +8,7 @@ Modular monolith (Spring Modulith) phục vụ app Finance mobile.
 - Group: `com.uit.finance` · version `0.1.0-SNAPSHOT`
 - Kiến trúc đã **chốt** ở `../ARCHITECTURE.md` (repo-level, tiếng Việt). Không tự đổi.
 - Hợp đồng API `api/openapi.yaml` là nguồn sự thật duy nhất; `finance-mobile` pin bản này.
-- Module hiện có: `identity` (user local + JIT provisioning từ Keycloak), `notification` (reference consumer).
+- Module hiện có: `identity` (user local + JIT provisioning từ Keycloak), `notification` (reference consumer), `ledger` (ví, danh mục, giao dịch — ADR-005; Phase 1 mới có domain + use case, chưa có adapter).
 - Ngoài repo này chỉ còn `finance-mobile` (Kotlin Multiplatform) — **repo riêng, không sửa từ đây**.
 
 ## 2. Commands
@@ -57,7 +57,7 @@ src/main/java/com/uit/finance
 │                                     EventExternalizationConfig, EventDeduplicator, InboundEvents
 └─ modules/<name>/                    domain → application → adapter (xem .claude/rules/architecture-boundaries.md)
 src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity), V3 (external IdP)
-src/test/…/architecture               ArchitectureRulesTest (8 luật), ModularityTest
+src/test/…/architecture               ArchitectureRulesTest (luật 1–8 + #10), ModularityTest
 src/integrationTest                   Testcontainers end-to-end
 docs/adr/ADR-001..006                 quyết định (004 = Keycloak, 005 = ledger, 006 = bảo mật dữ liệu; 002 = sync) · docs/module-template.md
 ```
