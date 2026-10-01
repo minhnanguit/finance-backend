@@ -2,20 +2,27 @@ package com.uit.finance.architecture;
 
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.uit.finance.shared.kernel.UserId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The eight Clean Architecture rules from ARCHITECTURE.md §4.3, executable. A violation fails the
- * build.
+ * The Clean Architecture rules from ARCHITECTURE.md §4.3, executable (rule 6 lives in {@code
+ * ModularityTest}). A violation fails the build.
  */
 @AnalyzeClasses(packages = "com.uit.finance", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureRulesTest {
@@ -37,6 +44,9 @@ class ArchitectureRulesTest {
   private static final String[] FRAMEWORK_SHARED_PACKAGES = {
     "..shared.web..", "..shared.persistence..", "..shared.security..", "..shared.messaging.."
   };
+
+  /** Modules whose data belongs to one user. Add a module here when it gets user-owned tables. */
+  private static final String[] USER_SCOPED_OUT_PORTS = {"..modules.ledger.application.port.out.."};
 
   @ArchTest
   static final ArchRule rule1_domainAndKernelAreFrameworkFree =
@@ -152,4 +162,35 @@ class ArchitectureRulesTest {
           .resideInAPackage("..application.service..")
           .because(
               "the use case is the unit of work; adapters must not open business transactions");
+
+  @ArchTest
+  static final ArchRule rule10_userScopedOutPortsAlwaysTakeTheOwner =
+      methods()
+          .that()
+          .areDeclaredInClassesThat()
+          .resideInAnyPackage(USER_SCOPED_OUT_PORTS)
+          .and()
+          .areDeclaredInClassesThat()
+          .areInterfaces()
+          .and()
+          .doNotHaveModifier(JavaModifier.SYNTHETIC)
+          .should(takeAParameterOfType(UserId.class))
+          .because(
+              "every query and write on user data must be scoped to its owner, or user A can read"
+                  + " or overwrite user B's ledger by id (ADR-006 B1, OWASP API1)");
+
+  private static ArchCondition<JavaMethod> takeAParameterOfType(Class<?> type) {
+    return new ArchCondition<>("take a parameter of type " + type.getSimpleName()) {
+      @Override
+      public void check(JavaMethod method, ConditionEvents events) {
+        boolean found =
+            method.getRawParameterTypes().stream().anyMatch(param -> param.isEquivalentTo(type));
+        if (!found) {
+          events.add(
+              SimpleConditionEvent.violated(
+                  method, method.getFullName() + " has no " + type.getSimpleName() + " parameter"));
+        }
+      }
+    };
+  }
 }

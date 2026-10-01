@@ -17,7 +17,7 @@ modules/<name>/
 
 Chiều phụ thuộc: `adapter → application → domain`. Không bao giờ ngược lại.
 
-## 8 luật (khớp `ArchitectureRulesTest` + `ModularityTest`)
+## Luật (khớp `ArchitectureRulesTest` + `ModularityTest`)
 
 | # | Luật | Enforce |
 |---|---|---|
@@ -29,6 +29,9 @@ Chiều phụ thuộc: `adapter → application → domain`. Không bao giờ ng
 | 6 | Module chỉ gọi nhau qua `port/in` public hoặc `domain.event` được `@NamedInterface` | `ApplicationModules.verify()` |
 | 7 | `shared.web` / `shared.persistence` / `shared.security` / `shared.messaging` chỉ cho adapter dùng — domain/application/kernel cấm | ArchUnit `rule7` |
 | 8 | `@Transactional` (class hoặc method) chỉ trong `..application.service..` | ArchUnit `rule8` |
+| 10 | Mọi method của interface trong port out của module dữ liệu-theo-user (`USER_SCOPED_OUT_PORTS`, hiện là `ledger`) phải có tham số `UserId` (ADR-006 B1) | ArchUnit `rule10` |
+
+Module mới có bảng gắn user (budget, recurring...) thì thêm package `port.out` của nó vào `USER_SCOPED_OUT_PORTS`.
 
 > ArchUnit đọc **bytecode**: một `import` thừa không bị bắt, chỉ dependency thật (field, param, annotation, call) mới vi phạm.
 
