@@ -1,15 +1,16 @@
-package com.uit.finance.modules.ledger.application.service;
+package com.uit.finance.modules.ledger.application.service.category;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.uit.finance.modules.ledger.domain.model.Category;
-import com.uit.finance.modules.ledger.domain.model.CategoryDetails;
-import com.uit.finance.modules.ledger.domain.model.CategoryId;
-import com.uit.finance.modules.ledger.domain.model.CategoryKind;
-import com.uit.finance.modules.ledger.domain.model.DefaultCategoryTemplate;
-import com.uit.finance.modules.ledger.domain.model.TemplateKey;
+import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryDetails;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.category.DefaultCategoryTemplate;
+import com.uit.finance.modules.ledger.domain.model.category.TemplateKey;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

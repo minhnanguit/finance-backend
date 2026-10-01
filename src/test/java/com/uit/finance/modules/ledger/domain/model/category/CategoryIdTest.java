@@ -1,7 +1,8 @@
-package com.uit.finance.modules.ledger.domain.model;
+package com.uit.finance.modules.ledger.domain.model.category;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.uit.finance.modules.ledger.domain.model.LedgerFixtures;
 import com.uit.finance.shared.kernel.UserId;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;

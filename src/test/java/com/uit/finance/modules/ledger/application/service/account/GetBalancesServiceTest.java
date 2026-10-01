@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.application.service;
+package com.uit.finance.modules.ledger.application.service.account;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
@@ -12,18 +12,19 @@ import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.transfe
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.transferRefs;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.uit.finance.modules.ledger.application.port.in.GetBalancesUseCase.AccountBalance;
-import com.uit.finance.modules.ledger.application.port.in.GetBalancesUseCase.Balances;
-import com.uit.finance.modules.ledger.application.port.in.GetBalancesUseCase.CurrencyTotal;
-import com.uit.finance.modules.ledger.domain.model.Account;
-import com.uit.finance.modules.ledger.domain.model.AccountDetails;
-import com.uit.finance.modules.ledger.domain.model.AccountId;
-import com.uit.finance.modules.ledger.domain.model.Category;
-import com.uit.finance.modules.ledger.domain.model.CategoryKind;
-import com.uit.finance.modules.ledger.domain.model.Transaction;
-import com.uit.finance.modules.ledger.domain.model.TransactionDetails;
-import com.uit.finance.modules.ledger.domain.model.TransactionId;
-import com.uit.finance.modules.ledger.domain.model.TransactionReferences;
+import com.uit.finance.modules.ledger.application.port.in.account.GetBalancesUseCase.AccountBalance;
+import com.uit.finance.modules.ledger.application.port.in.account.GetBalancesUseCase.Balances;
+import com.uit.finance.modules.ledger.application.port.in.account.GetBalancesUseCase.CurrencyTotal;
+import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
+import com.uit.finance.modules.ledger.domain.model.account.Account;
+import com.uit.finance.modules.ledger.domain.model.account.AccountDetails;
+import com.uit.finance.modules.ledger.domain.model.account.AccountId;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.transaction.Transaction;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionDetails;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionId;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionReferences;
 import com.uit.finance.shared.kernel.UserId;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;

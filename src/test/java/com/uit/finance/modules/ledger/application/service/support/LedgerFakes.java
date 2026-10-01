@@ -1,24 +1,24 @@
-package com.uit.finance.modules.ledger.application.service;
+package com.uit.finance.modules.ledger.application.service.support;
 
-import com.uit.finance.modules.ledger.application.port.out.AccountUsagePort;
-import com.uit.finance.modules.ledger.application.port.out.CategoryUsagePort;
-import com.uit.finance.modules.ledger.application.port.out.LoadAccountFlowsPort;
-import com.uit.finance.modules.ledger.application.port.out.LoadAccountPort;
-import com.uit.finance.modules.ledger.application.port.out.LoadCategoryPort;
-import com.uit.finance.modules.ledger.application.port.out.LoadTransactionPort;
-import com.uit.finance.modules.ledger.application.port.out.SaveAccountPort;
-import com.uit.finance.modules.ledger.application.port.out.SaveCategoryPort;
-import com.uit.finance.modules.ledger.application.port.out.SaveTransactionPort;
-import com.uit.finance.modules.ledger.application.port.out.SeedCategoriesPort;
-import com.uit.finance.modules.ledger.domain.model.Account;
-import com.uit.finance.modules.ledger.domain.model.AccountFlows;
-import com.uit.finance.modules.ledger.domain.model.AccountId;
-import com.uit.finance.modules.ledger.domain.model.Category;
-import com.uit.finance.modules.ledger.domain.model.CategoryId;
-import com.uit.finance.modules.ledger.domain.model.Transaction;
-import com.uit.finance.modules.ledger.domain.model.TransactionDetails;
-import com.uit.finance.modules.ledger.domain.model.TransactionId;
-import com.uit.finance.modules.ledger.domain.model.TransactionStatus;
+import com.uit.finance.modules.ledger.application.port.out.account.AccountUsagePort;
+import com.uit.finance.modules.ledger.application.port.out.account.LoadAccountFlowsPort;
+import com.uit.finance.modules.ledger.application.port.out.account.LoadAccountPort;
+import com.uit.finance.modules.ledger.application.port.out.account.SaveAccountPort;
+import com.uit.finance.modules.ledger.application.port.out.category.CategoryUsagePort;
+import com.uit.finance.modules.ledger.application.port.out.category.LoadCategoryPort;
+import com.uit.finance.modules.ledger.application.port.out.category.SaveCategoryPort;
+import com.uit.finance.modules.ledger.application.port.out.category.SeedCategoriesPort;
+import com.uit.finance.modules.ledger.application.port.out.transaction.LoadTransactionPort;
+import com.uit.finance.modules.ledger.application.port.out.transaction.SaveTransactionPort;
+import com.uit.finance.modules.ledger.domain.model.account.Account;
+import com.uit.finance.modules.ledger.domain.model.account.AccountFlows;
+import com.uit.finance.modules.ledger.domain.model.account.AccountId;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
+import com.uit.finance.modules.ledger.domain.model.transaction.Transaction;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionDetails;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionId;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionStatus;
 import com.uit.finance.shared.kernel.DomainEvent;
 import com.uit.finance.shared.kernel.DomainEventPublisher;
 import com.uit.finance.shared.kernel.UserId;
@@ -33,7 +33,7 @@ import java.util.UUID;
 /**
  * Fake in-memory cho port của ledger. Dùng fake thay mock để đọc được behavior (testing-policy).
  */
-final class LedgerFakes {
+public final class LedgerFakes {
 
   private LedgerFakes() {}
 
@@ -41,7 +41,7 @@ final class LedgerFakes {
    * Một "database" cho cả 3 bảng. Luôn lưu và trả **bản copy** như DB thật, nên service quên gọi
    * {@code update} thì test thấy ngay. Mọi query lọc theo {@code owner} như adapter thật (B1).
    */
-  static final class Store
+  public static final class Store
       implements LoadAccountPort,
           SaveAccountPort,
           AccountUsagePort,
@@ -53,28 +53,28 @@ final class LedgerFakes {
           SaveTransactionPort,
           LoadAccountFlowsPort {
 
-    final Map<UUID, Account> accounts = new LinkedHashMap<>();
-    final Map<UUID, Category> categories = new LinkedHashMap<>();
-    final Map<UUID, Transaction> transactions = new LinkedHashMap<>();
-    int inserts;
-    int updates;
+    public final Map<UUID, Account> accounts = new LinkedHashMap<>();
+    public final Map<UUID, Category> categories = new LinkedHashMap<>();
+    public final Map<UUID, Transaction> transactions = new LinkedHashMap<>();
+    public int inserts;
+    public int updates;
 
     /** Chạy ngay trước mỗi insert, để giả lập một request song song vừa chen vào. */
-    Runnable beforeInsert = () -> {};
+    public Runnable beforeInsert = () -> {};
 
-    void put(Account account) {
+    public void put(Account account) {
       accounts.put(account.getId().value(), copy(account));
     }
 
-    void put(Category category) {
+    public void put(Category category) {
       categories.put(category.getId().value(), copy(category));
     }
 
-    void put(Transaction transaction) {
+    public void put(Transaction transaction) {
       transactions.put(transaction.getId().value(), copy(transaction));
     }
 
-    Account account(Account account) {
+    public Account account(Account account) {
       return accounts.get(account.getId().value());
     }
 
@@ -297,9 +297,9 @@ final class LedgerFakes {
     }
   }
 
-  static final class RecordingEvents implements DomainEventPublisher {
+  public static final class RecordingEvents implements DomainEventPublisher {
 
-    final List<DomainEvent> published = new ArrayList<>();
+    public final List<DomainEvent> published = new ArrayList<>();
 
     @Override
     public void publish(DomainEvent event) {

@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.domain.model;
+package com.uit.finance.modules.ledger.domain.model.account;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.archived;

@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.application.service;
+package com.uit.finance.modules.ledger.application.service.account;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
@@ -11,25 +11,26 @@ import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.expense
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.refs;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.uit.finance.modules.ledger.application.port.in.AccountFields;
-import com.uit.finance.modules.ledger.application.port.in.AccountView;
-import com.uit.finance.modules.ledger.application.port.in.ArchiveAccountUseCase.ArchiveAccountCommand;
-import com.uit.finance.modules.ledger.application.port.in.CreateAccountUseCase.CreateAccountCommand;
-import com.uit.finance.modules.ledger.application.port.in.DeleteAccountUseCase.DeleteAccountCommand;
-import com.uit.finance.modules.ledger.application.port.in.UpdateAccountUseCase.UpdateAccountCommand;
+import com.uit.finance.modules.ledger.application.port.in.account.AccountFields;
+import com.uit.finance.modules.ledger.application.port.in.account.AccountView;
+import com.uit.finance.modules.ledger.application.port.in.account.ArchiveAccountUseCase.ArchiveAccountCommand;
+import com.uit.finance.modules.ledger.application.port.in.account.CreateAccountUseCase.CreateAccountCommand;
+import com.uit.finance.modules.ledger.application.port.in.account.DeleteAccountUseCase.DeleteAccountCommand;
+import com.uit.finance.modules.ledger.application.port.in.account.UpdateAccountUseCase.UpdateAccountCommand;
+import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
 import com.uit.finance.modules.ledger.domain.exception.CurrencyLockedException;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.modules.ledger.domain.exception.LimitExceededException;
-import com.uit.finance.modules.ledger.domain.model.Account;
-import com.uit.finance.modules.ledger.domain.model.AccountDetails;
-import com.uit.finance.modules.ledger.domain.model.AccountId;
-import com.uit.finance.modules.ledger.domain.model.Category;
-import com.uit.finance.modules.ledger.domain.model.CategoryKind;
-import com.uit.finance.modules.ledger.domain.model.LedgerLimits;
-import com.uit.finance.modules.ledger.domain.model.Transaction;
-import com.uit.finance.modules.ledger.domain.model.TransactionId;
+import com.uit.finance.modules.ledger.domain.model.account.Account;
+import com.uit.finance.modules.ledger.domain.model.account.AccountDetails;
+import com.uit.finance.modules.ledger.domain.model.account.AccountId;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerLimits;
+import com.uit.finance.modules.ledger.domain.model.transaction.Transaction;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionId;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.util.UUID;

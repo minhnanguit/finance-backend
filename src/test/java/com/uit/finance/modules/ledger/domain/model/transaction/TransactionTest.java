@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.domain.model;
+package com.uit.finance.modules.ledger.domain.model.transaction;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
@@ -25,6 +25,10 @@ import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InvalidTransferException;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.modules.ledger.domain.exception.TransactionCurrencyMismatchException;
+import com.uit.finance.modules.ledger.domain.model.account.Account;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerLimits;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

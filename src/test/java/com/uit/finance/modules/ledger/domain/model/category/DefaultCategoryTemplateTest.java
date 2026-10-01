@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.domain.model;
+package com.uit.finance.modules.ledger.domain.model.category;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package com.uit.finance.modules.ledger.application.service;
+package com.uit.finance.modules.ledger.application.service.category;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
@@ -8,18 +8,19 @@ import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.categor
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.uit.finance.modules.ledger.application.port.in.CategoryFields;
-import com.uit.finance.modules.ledger.application.port.in.CategoryView;
-import com.uit.finance.modules.ledger.application.port.in.CreateCategoryUseCase.CreateCategoryCommand;
-import com.uit.finance.modules.ledger.application.port.in.DeleteCategoryUseCase.DeleteCategoryCommand;
-import com.uit.finance.modules.ledger.application.port.in.UpdateCategoryUseCase.UpdateCategoryCommand;
+import com.uit.finance.modules.ledger.application.port.in.category.CategoryFields;
+import com.uit.finance.modules.ledger.application.port.in.category.CategoryView;
+import com.uit.finance.modules.ledger.application.port.in.category.CreateCategoryUseCase.CreateCategoryCommand;
+import com.uit.finance.modules.ledger.application.port.in.category.DeleteCategoryUseCase.DeleteCategoryCommand;
+import com.uit.finance.modules.ledger.application.port.in.category.UpdateCategoryUseCase.UpdateCategoryCommand;
+import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.KindImmutableException;
 import com.uit.finance.modules.ledger.domain.exception.LimitExceededException;
 import com.uit.finance.modules.ledger.domain.exception.ReferencePendingException;
-import com.uit.finance.modules.ledger.domain.model.Category;
-import com.uit.finance.modules.ledger.domain.model.CategoryKind;
-import com.uit.finance.modules.ledger.domain.model.LedgerLimits;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerLimits;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.util.UUID;

@@ -2,8 +2,17 @@ package com.uit.finance.modules.ledger.domain.model;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.uit.finance.modules.ledger.application.port.in.TransactionFields;
+import com.uit.finance.modules.ledger.application.port.in.transaction.TransactionFields;
 import com.uit.finance.modules.ledger.domain.exception.InvalidFieldException;
+import com.uit.finance.modules.ledger.domain.model.account.Account;
+import com.uit.finance.modules.ledger.domain.model.account.AccountDetails;
+import com.uit.finance.modules.ledger.domain.model.account.AccountId;
+import com.uit.finance.modules.ledger.domain.model.category.Category;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryDetails;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
+import com.uit.finance.modules.ledger.domain.model.category.CategoryKind;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionDetails;
+import com.uit.finance.modules.ledger.domain.model.transaction.TransactionReferences;
 import com.uit.finance.shared.kernel.DomainException;
 import com.uit.finance.shared.kernel.UserId;
 import java.time.Instant;
