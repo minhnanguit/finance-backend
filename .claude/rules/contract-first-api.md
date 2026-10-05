@@ -1,6 +1,6 @@
 # Rule — Contract-first API
 
-`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `2.0.0`) là **nguồn sự thật duy nhất**.
+`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `2.1.0`) là **nguồn sự thật duy nhất**.
 
 ## Thứ tự bất biến
 
