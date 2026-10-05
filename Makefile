@@ -18,7 +18,7 @@ endif
 
 help: ## Liệt kê mọi lệnh make của repo này
 	@echo "finance-backend — các lệnh có sẵn:"
-	@grep -E '^[a-z][a-zA-Z_-]*:.*## ' $(MAKEFILE_LIST) \
+	@grep -hE '^[a-z][a-zA-Z_-]*:.*## ' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*## "}{printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
 
 # ---------- Hạ tầng (Docker) ----------
