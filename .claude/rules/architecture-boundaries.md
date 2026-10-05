@@ -27,7 +27,7 @@ Chiều phụ thuộc: `adapter → application → domain`. Không bao giờ ng
 | 4 | Layer hướng vào trong; `adapter.in` ↮ `adapter.out` | ArchUnit `rule4a/4b/4c` |
 | 5 | Class top-level trong `..application.port..` phải là `interface` hoặc `record` | ArchUnit `rule5` |
 | 6 | Module chỉ gọi nhau qua `port/in` public hoặc `domain.event` được `@NamedInterface` | `ApplicationModules.verify()` |
-| 7 | `shared.web` / `shared.persistence` / `shared.security` / `shared.messaging` chỉ cho adapter dùng — domain/application/kernel cấm | ArchUnit `rule7` |
+| 7 | `shared.web` / `shared.persistence` / `shared.security` / `shared.messaging` / `shared.sync` chỉ cho adapter dùng — domain/application/kernel cấm | ArchUnit `rule7` |
 | 8 | `@Transactional` (class hoặc method) chỉ trong `..application.service..` | ArchUnit `rule8` |
 | 10 | Mọi method của interface trong port out của module dữ liệu-theo-user (`USER_SCOPED_OUT_PORTS`, hiện là `ledger`) phải có tham số `UserId` (ADR-006 B1) | ArchUnit `rule10` |
 

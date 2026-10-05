@@ -24,10 +24,10 @@ import java.util.UUID;
  * issuer / audience, nên đó chính là code được test. Chỉ thiếu login UI của Keycloak — phần đó test
  * trên emulator. Dùng HTTP server có sẵn của JDK để không thêm dependency.
  */
-final class TestIdentityProvider {
+public final class TestIdentityProvider {
 
-  static final String ISSUER = "https://test-idp.local/realms/finance";
-  static final String AUDIENCE = "finance-api";
+  public static final String ISSUER = "https://test-idp.local/realms/finance";
+  public static final String AUDIENCE = "finance-api";
 
   private static final TestIdentityProvider INSTANCE = new TestIdentityProvider();
 
@@ -53,11 +53,11 @@ final class TestIdentityProvider {
     }
   }
 
-  static TestIdentityProvider instance() {
+  public static TestIdentityProvider instance() {
     return INSTANCE;
   }
 
-  String jwkSetUri() {
+  public String jwkSetUri() {
     return "http://127.0.0.1:" + server.getAddress().getPort() + "/jwks";
   }
 

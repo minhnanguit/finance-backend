@@ -42,7 +42,11 @@ class ArchitectureRulesTest {
     "com.rabbitmq.."
   };
   private static final String[] FRAMEWORK_SHARED_PACKAGES = {
-    "..shared.web..", "..shared.persistence..", "..shared.security..", "..shared.messaging.."
+    "..shared.web..",
+    "..shared.persistence..",
+    "..shared.security..",
+    "..shared.messaging..",
+    "..shared.sync.."
   };
 
   /** Modules whose data belongs to one user. Add a module here when it gets user-owned tables. */
@@ -149,7 +153,7 @@ class ArchitectureRulesTest {
           .should()
           .dependOnClassesThat()
           .resideInAnyPackage(FRAMEWORK_SHARED_PACKAGES)
-          .because("shared.web/persistence/security/messaging are adapters of the platform");
+          .because("shared.web/persistence/security/messaging/sync are adapters of the platform");
 
   @ArchTest
   static final ArchRule rule8_transactionsAreDefinedOnlyInApplicationServices =

@@ -130,6 +130,10 @@ Tên hiển thị tiếng Việt lưu thẳng vào `name` lúc seed. Thêm mẫu
 
 Mọi index bắt đầu bằng `user_id` (trừ 2 index theo ví, vốn đã thuộc một user), để partition theo `hash(user_id)` sau này không phải sửa query.
 
+**FK trong module dùng khoá ghép** `(user_id, account_id) → accounts (user_id, id)` (tương tự cho ví đến, danh mục, danh mục cha), dựa trên `UNIQUE (user_id, id)` của bảng được trỏ tới. DB tự chặn giao dịch của user này trỏ vào ví của user khác: lớp chặn thứ hai cho ADR-006 B1. Vẫn không có FK sang `users`.
+
+`currency` là `VARCHAR(3)` + `CHECK (currency ~ '^[A-Z]{3}$')` thay vì `CHAR(3)` của ADR-001: cùng bảo đảm, và khớp kiểu `String` khi Hibernate `ddl-auto=validate`.
+
 ### 8. Event
 
 `ledger.transaction.recorded` / `.updated` / `.deleted`, payload chỉ có `transactionId`, `userId`, `accountId`, `occurredOn`. **Không** có số tiền, ghi chú, người nhận (ADR-006 B8). Consumer cần chi tiết thì đọc qua `port/in` của ledger.

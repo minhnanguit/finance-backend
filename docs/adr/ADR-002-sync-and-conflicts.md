@@ -80,7 +80,7 @@ UPDATE user_sync_state SET last_seq = last_seq + 1 WHERE user_id = :me RETURNING
 
 ### 5. Lần sync đầu tiên (S5)
 
-- Chưa có dòng `user_sync_state` → `INSERT ... ON CONFLICT DO NOTHING`, rồi gọi `initialize(user)` của mọi handler **trong cùng request** (ledger: seed danh mục mặc định, ADR-005 §6).
+- `user_sync_state.initialized_at IS NULL` (đọc dưới row lock của `ChangeSequencer.lock`) → gọi `initialize(user)` của mọi handler **trong cùng request** (ledger: seed danh mục mặc định, ADR-005 §6), rồi đặt `initialized_at`. Không dùng "chưa có dòng" để nhận biết, vì lần ghi nào cũng có thể tạo dòng (upsert trong `ChangeSequencer`).
 - 2 request đầu tiên chạy song song vẫn an toàn: id seed là UUIDv5, insert là `ON CONFLICT DO NOTHING`.
 - Seed có `change_seq` như mọi lần ghi khác, nên client nhận danh mục qua pull bình thường.
 
@@ -96,7 +96,7 @@ Mobile ─POST /sync/push─►  modules.sync ──SyncHandler──► ledger/
 | Thành phần | Nằm ở | Vai trò |
 |---|---|---|
 | `SyncHandler` | `shared.sync` (interface) | `entity()` · `apply(UserId, SyncOp) → SyncOpResult` · `changesSince(UserId, afterSeq, limit)` · `initialize(UserId)` (mặc định không làm gì) |
-| `ChangeSequencer` | `shared.sync` (interface), impl ở `modules.sync` | `long next(UserId)`. Bắt buộc gọi trong transaction đang mở |
+| `ChangeSequencer` | `shared.sync` (interface), impl `JdbcChangeSequencer` ở `modules.sync` (**đã có từ Phase 2**) | `next(UserId)` · `reserve(UserId, count)` cho ghi nhiều dòng · `lock(UserId)` để đọc trước rồi mới lấy đúng số cần. Upsert vào `user_sync_state` nên dòng tự tạo ở lần ghi đầu. Ngoài transaction thì ném lỗi |
 | `modules.sync` | module | Controller, điều phối batch, `user_sync_state`, `sync_ops`, job dọn. **Chỉ phụ thuộc `shared`** |
 | `ledger` | `adapter/in/sync` | 3 handler (`account`, `category`, `transaction`), mỗi cái gọi `port/in` của ledger |
 | `ledger` | `adapter/out/persistence` | Gọi `ChangeSequencer` khi lưu |
