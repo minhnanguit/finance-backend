@@ -76,6 +76,7 @@ UPDATE user_sync_state SET last_seq = last_seq + 1 WHERE user_id = :me RETURNING
 | Change | `entity`, `id`, `changeSeq`, `deleted`, `data` (null khi `deleted = true`) |
 
 - Client lặp pull tới khi `hasMore = false` rồi mới coi là đồng bộ xong.
+- Một trang được đọc trong **một snapshot** (`REPEATABLE READ`). Mỗi entity là một câu query riêng; ở `READ COMMITTED`, một lần ghi commit giữa 2 câu có thể bị câu đầu bỏ lỡ trong khi câu sau trả số lớn hơn nó, và cursor nhảy qua mất. Trong một snapshot, các số nhìn thấy luôn liền từ 1 vì số được phát dưới row lock.
 - Một trang có thể chứa giao dịch trước ví của nó (ví được sửa sau nên `change_seq` lớn hơn). **Bảng ledger trên mobile không đặt FK**, UI join chịu được bản ghi thiếu.
 
 ### 5. Lần sync đầu tiên (S5)
@@ -95,7 +96,7 @@ Mobile ─POST /sync/push─►  modules.sync ──SyncHandler──► ledger/
 
 | Thành phần | Nằm ở | Vai trò |
 |---|---|---|
-| `SyncHandler` | `shared.sync` (interface) | `entity()` · `apply(UserId, SyncOp) → SyncOpResult` · `changesSince(UserId, afterSeq, limit)` · `initialize(UserId)` (mặc định không làm gì) |
+| `SyncHandler` | `shared.sync` (interface) | `entity()` · `apply(UserId, SyncOp) → SyncOpResult` · `current(UserId, id)` · `changesSince(UserId, afterSeq, limit)` · `initialize(UserId)` (mặc định không làm gì). Kèm `SyncData`: đọc chặt `data` của op |
 | `ChangeSequencer` | `shared.sync` (interface), impl `JdbcChangeSequencer` ở `modules.sync` (**đã có từ Phase 2**) | `next(UserId)` · `reserve(UserId, count)` cho ghi nhiều dòng · `lock(UserId)` để đọc trước rồi mới lấy đúng số cần. Upsert vào `user_sync_state` nên dòng tự tạo ở lần ghi đầu. Ngoài transaction thì ném lỗi |
 | `modules.sync` | module | Controller, điều phối batch, `user_sync_state`, `sync_ops`, job dọn. **Chỉ phụ thuộc `shared`** |
 | `ledger` | `adapter/in/sync` | 3 handler (`account`, `category`, `transaction`), mỗi cái gọi `port/in` của ledger |
@@ -103,7 +104,9 @@ Mobile ─POST /sync/push─►  modules.sync ──SyncHandler──► ledger/
 
 - Cùng kiểu dependency inversion với `CurrentUserResolver`: `sync` không biết `ledger` tồn tại, Spring inject `List<SyncHandler>`.
 - Thêm module mới = viết thêm handler, **không sửa `sync`** (Open/Closed).
-- `shared.sync` được thêm vào luật ArchUnit #7 (chỉ adapter dùng).
+- `shared.sync` được thêm vào luật ArchUnit #7 (chỉ adapter dùng). Vì vậy application của chính module `sync` gọi handler qua port riêng `SyncHandlersPort`; adapter `SyncHandlerRegistry` chuyển tiếp tới các `SyncHandler`.
+- `current` (bản ghi trả kèm kết quả op) được `sync` đọc **sau khi** transaction của op kết thúc, không do handler trả về: tránh trả dữ liệu của một lần ghi đã bị rollback.
+- Entity lạ → `REJECTED sync.unknown_entity`. Lỗi bất ngờ ở một op → `RETRY sync.server_error`, các op khác vẫn chạy. Hai lần sửa song song đụng optimistic lock → `RETRY ledger.concurrent_update`.
 - Handler **trả `SyncOpResult`, không ném lỗi nghiệp vụ ra ngoài**: handler của ledger đổi `DomainException` thành `REJECTED` + `code`, đổi "ví/danh mục chưa thấy" thành `RETRY`. Chỉ module sở hữu mới biết mã lỗi nào nghĩa là gì, nên việc dịch nằm ở handler, không nằm ở `sync`.
 
 ### 7. Xử lý một op

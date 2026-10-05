@@ -62,7 +62,7 @@ public final class TestIdentityProvider {
   }
 
   /** Token mà app phải accept. */
-  String validToken(String subject, String email, String displayName) {
+  public String validToken(String subject, String email, String displayName) {
     return token(ISSUER, AUDIENCE, subject, email, displayName, Instant.now().plusSeconds(300));
   }
 
