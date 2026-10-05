@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,10 @@ interface CategoryJpaRepository extends Repository<CategoryJpaEntity, UUID> {
 
   @Query("select c.id from CategoryJpaEntity c where c.userId = :userId and c.id in :ids")
   List<UUID> findExistingIds(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);
+
+  /** Dùng index {@code (user_id, change_seq)}. */
+  List<CategoryJpaEntity> findByUserIdAndChangeSeqGreaterThanOrderByChangeSeqAsc(
+      UUID userId, long afterSeq, Limit limit);
 
   CategoryJpaEntity saveAndFlush(CategoryJpaEntity entity);
 }

@@ -1,9 +1,11 @@
 package com.uit.finance.modules.ledger.adapter.out.persistence.category;
 
 import com.uit.finance.modules.ledger.adapter.out.persistence.support.Owners;
+import com.uit.finance.modules.ledger.application.port.out.category.LoadCategoryChangesPort;
 import com.uit.finance.modules.ledger.application.port.out.category.LoadCategoryPort;
 import com.uit.finance.modules.ledger.application.port.out.category.SaveCategoryPort;
 import com.uit.finance.modules.ledger.application.port.out.category.SeedCategoriesPort;
+import com.uit.finance.modules.ledger.application.port.out.shared.Sequenced;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.modules.ledger.domain.model.category.Category;
 import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
@@ -19,13 +21,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Limit;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /** Đọc/ghi danh mục, cùng luật lọc {@code user_id} và {@code change_seq} như ví. */
 @Component
-class CategoryPersistenceAdapter implements LoadCategoryPort, SaveCategoryPort, SeedCategoriesPort {
+class CategoryPersistenceAdapter
+    implements LoadCategoryPort, SaveCategoryPort, SeedCategoriesPort, LoadCategoryChangesPort {
 
   private static final String INSERT =
       """
@@ -115,5 +119,26 @@ class CategoryPersistenceAdapter implements LoadCategoryPort, SaveCategoryPort, 
       throw new IllegalStateException("JDBC driver did not report per-row insert counts");
     }
     return Arrays.stream(counts).sum();
+  }
+
+  @Override
+  public List<Sequenced<Category>> changesSince(UserId owner, long afterSeq, int limit) {
+    return repository
+        .findByUserIdAndChangeSeqGreaterThanOrderByChangeSeqAsc(
+            owner.value(), afterSeq, Limit.of(limit))
+        .stream()
+        .map(
+            entity ->
+                new Sequenced<>(CategoryPersistenceMapper.toDomain(entity), entity.getChangeSeq()))
+        .toList();
+  }
+
+  @Override
+  public Optional<Sequenced<Category>> findSequenced(UserId owner, CategoryId id) {
+    return repository
+        .findByIdAndUserId(id.value(), owner.value())
+        .map(
+            entity ->
+                new Sequenced<>(CategoryPersistenceMapper.toDomain(entity), entity.getChangeSeq()));
   }
 }

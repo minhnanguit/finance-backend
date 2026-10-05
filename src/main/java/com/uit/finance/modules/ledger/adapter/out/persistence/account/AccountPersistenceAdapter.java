@@ -1,8 +1,10 @@
 package com.uit.finance.modules.ledger.adapter.out.persistence.account;
 
 import com.uit.finance.modules.ledger.adapter.out.persistence.support.Owners;
+import com.uit.finance.modules.ledger.application.port.out.account.LoadAccountChangesPort;
 import com.uit.finance.modules.ledger.application.port.out.account.LoadAccountPort;
 import com.uit.finance.modules.ledger.application.port.out.account.SaveAccountPort;
+import com.uit.finance.modules.ledger.application.port.out.shared.Sequenced;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.modules.ledger.domain.model.account.Account;
 import com.uit.finance.modules.ledger.domain.model.account.AccountId;
@@ -12,6 +14,7 @@ import com.uit.finance.shared.sync.ChangeSequencer;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Limit;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +23,8 @@ import org.springframework.stereotype.Component;
  * change_seq} mới trong cùng transaction (ADR-002 §2).
  */
 @Component
-class AccountPersistenceAdapter implements LoadAccountPort, SaveAccountPort {
+class AccountPersistenceAdapter
+    implements LoadAccountPort, SaveAccountPort, LoadAccountChangesPort {
 
   private static final String INSERT =
       """
@@ -81,5 +85,26 @@ class AccountPersistenceAdapter implements LoadAccountPort, SaveAccountPort {
     AccountPersistenceMapper.apply(account, entity);
     entity.assignChangeSeq(sequencer.next(owner));
     repository.saveAndFlush(entity);
+  }
+
+  @Override
+  public List<Sequenced<Account>> changesSince(UserId owner, long afterSeq, int limit) {
+    return repository
+        .findByUserIdAndChangeSeqGreaterThanOrderByChangeSeqAsc(
+            owner.value(), afterSeq, Limit.of(limit))
+        .stream()
+        .map(
+            entity ->
+                new Sequenced<>(AccountPersistenceMapper.toDomain(entity), entity.getChangeSeq()))
+        .toList();
+  }
+
+  @Override
+  public Optional<Sequenced<Account>> findSequenced(UserId owner, AccountId id) {
+    return repository
+        .findByIdAndUserId(id.value(), owner.value())
+        .map(
+            entity ->
+                new Sequenced<>(AccountPersistenceMapper.toDomain(entity), entity.getChangeSeq()));
   }
 }

@@ -3,6 +3,7 @@ package com.uit.finance.modules.ledger.adapter.out.persistence.account;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.repository.Repository;
 
 /**
@@ -14,6 +15,10 @@ interface AccountJpaRepository extends Repository<AccountJpaEntity, UUID> {
   Optional<AccountJpaEntity> findByIdAndUserId(UUID id, UUID userId);
 
   List<AccountJpaEntity> findByUserIdAndDeletedAtIsNullOrderBySortOrderAscIdAsc(UUID userId);
+
+  /** Dùng index {@code (user_id, change_seq)}. */
+  List<AccountJpaEntity> findByUserIdAndChangeSeqGreaterThanOrderByChangeSeqAsc(
+      UUID userId, long afterSeq, Limit limit);
 
   AccountJpaEntity saveAndFlush(AccountJpaEntity entity);
 }

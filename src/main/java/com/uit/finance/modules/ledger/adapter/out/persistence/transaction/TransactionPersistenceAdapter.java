@@ -1,6 +1,8 @@
 package com.uit.finance.modules.ledger.adapter.out.persistence.transaction;
 
 import com.uit.finance.modules.ledger.adapter.out.persistence.support.Owners;
+import com.uit.finance.modules.ledger.application.port.out.shared.Sequenced;
+import com.uit.finance.modules.ledger.application.port.out.transaction.LoadTransactionChangesPort;
 import com.uit.finance.modules.ledger.application.port.out.transaction.LoadTransactionPort;
 import com.uit.finance.modules.ledger.application.port.out.transaction.SaveTransactionPort;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
@@ -10,7 +12,9 @@ import com.uit.finance.modules.ledger.domain.model.transaction.TransactionId;
 import com.uit.finance.shared.kernel.UserId;
 import com.uit.finance.shared.sync.ChangeSequencer;
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Limit;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +23,8 @@ import org.springframework.stereotype.Component;
  * lỗi, DB vẫn không cho giao dịch của user này trỏ vào ví của user khác.
  */
 @Component
-class TransactionPersistenceAdapter implements LoadTransactionPort, SaveTransactionPort {
+class TransactionPersistenceAdapter
+    implements LoadTransactionPort, SaveTransactionPort, LoadTransactionChangesPort {
 
   private static final String INSERT =
       """
@@ -79,5 +84,28 @@ class TransactionPersistenceAdapter implements LoadTransactionPort, SaveTransact
     TransactionPersistenceMapper.apply(transaction, entity);
     entity.assignChangeSeq(sequencer.next(owner));
     repository.saveAndFlush(entity);
+  }
+
+  @Override
+  public List<Sequenced<Transaction>> changesSince(UserId owner, long afterSeq, int limit) {
+    return repository
+        .findByUserIdAndChangeSeqGreaterThanOrderByChangeSeqAsc(
+            owner.value(), afterSeq, Limit.of(limit))
+        .stream()
+        .map(
+            entity ->
+                new Sequenced<>(
+                    TransactionPersistenceMapper.toDomain(entity), entity.getChangeSeq()))
+        .toList();
+  }
+
+  @Override
+  public Optional<Sequenced<Transaction>> findSequenced(UserId owner, TransactionId id) {
+    return repository
+        .findByIdAndUserId(id.value(), owner.value())
+        .map(
+            entity ->
+                new Sequenced<>(
+                    TransactionPersistenceMapper.toDomain(entity), entity.getChangeSeq()));
   }
 }
