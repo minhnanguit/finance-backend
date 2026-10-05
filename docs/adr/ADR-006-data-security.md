@@ -50,7 +50,7 @@ Xử lý của B2 lan ra mọi REST đọc sau này: id không phải của mìn
 ### B3: chỉ nhận field nghiệp vụ
 
 - Contract: schema `data` của từng entity bật `additionalProperties: false`, không khai field hệ thống.
-- Runtime: Jackson `FAIL_ON_UNKNOWN_PROPERTIES = true` cho DTO sync. Chặn ở 2 lớp để không phụ thuộc cấu hình generator.
+- Runtime: `data` của op đi qua `SyncData` (`shared.sync`), đọc chặt theo danh sách field của từng entity: field lạ → `REJECTED sync.unknown_field`, sai kiểu JSON (số thập phân cho số tiền...) → `sync.invalid_field`. Chặn theo **từng op**, không làm hỏng cả batch như khi để Jackson từ chối. Unit test so danh sách field của mapper với model sinh từ contract để hai bên không lệch nhau.
 - `userId` của mọi command lấy từ `AuthenticatedUser` (token), không có trong DTO.
 
 ### B4: giới hạn
@@ -59,7 +59,7 @@ Xử lý của B2 lan ra mọi REST đọc sau này: id không phải của mìn
 |---|---|---|
 | Push | 60 request/phút mỗi user | `RateLimitFilter` (`shared.web`, Redis) → `429` + `Retry-After` |
 | Pull | 120 request/phút mỗi user | như trên |
-| Body push | 256 KB | Filter theo path, trước khi đọc JSON → `413` |
+| Body push | 256 KB | `BodySizeLimitFilter` (`shared.web`), trước khi đọc JSON → `413`. Có `Content-Length` thì chặn không đọc byte nào; body chunked thì đọc tối đa 256 KB + 1 byte rồi chặn |
 | Op mỗi batch | 100 | Contract (`maxItems`) + `modules.sync` |
 | `limit` pull | 500 | Contract (`maximum`) |
 | Số tiền, độ dài chữ, ngày | ADR-005 §4 | Domain + `CHECK` trong DB |
