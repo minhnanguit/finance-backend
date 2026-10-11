@@ -71,7 +71,9 @@ Rate limit dùng Redis có sẵn, 0 dependency mới. Redis chết → **cho qua
 
 | Việc | Cách |
 |---|---|
-| Mở DB | Chỉ sau khi có `userId` từ `/me`. Koin scope theo phiên đăng nhập; đóng scope là đóng DB |
+| Mở DB | Chỉ sau khi có `userId` từ `/me`. `UserDatabaseProvider` (StateFlow DB đang mở) thay cho Koin scope |
+| Đổi phiên | Trước khi đóng/đổi/xoá DB: huỷ lịch sync **và** vòng sync đang chạy, chờ nó dừng hẳn (`SyncEngine.stop()`). Mỗi vòng sync gắn với một DB, kiểm lại trước mọi request. `userId` từ `/me` chỉ gắn vào đúng phiên đã hỏi; token sau refresh chỉ được lưu, và phiên chỉ bị xoá khi refresh bị từ chối, nếu phiên hiện tại vẫn là phiên đã gửi refresh (compare-and-set theo refresh token). Một request/refresh của A về muộn không bao giờ ghi vào phiên của B, cũng không làm phiên của A sống lại sau khi A đăng xuất |
+| Mở không được | Chỉ xoá file khi chắc chắn không đọc lại được: khoá đã mất hẳn, hoặc SQLite báo sai khoá/file hỏng (`SQLITE_NOTADB`, `SQLITE_CORRUPT`). Keystore/Keychain tạm bận, I/O, đĩa đầy, migration lỗi → giữ file + khoá, báo `Failed`, thử lại sau. `SecureStorage` không bao giờ xoá giá trị vì lỗi tạm thời |
 | Khoá | 256-bit từ CSPRNG, sinh khi tạo file, key `db-key-<userId>` trong `SecureStorage`. Không bao giờ ra khỏi máy |
 | iOS Keychain | `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`: sync nền chạy được sau lần mở khoá đầu, khoá không theo iCloud/backup |
 | Android | Khoá DB được mã hoá bằng khoá AES-GCM trong Keystore (cơ chế `SecureStorage` hiện có). `allowBackup=false` cho file DB |

@@ -104,6 +104,7 @@ chỉ tính giao dịch: deleted_at IS NULL AND status = CONFIRMED
 - Số dư được phép âm. App ghi lại thực tế, không chặn chi quá.
 - Tổng nhiều ví khác tiền tệ không cộng thẳng (ADR-001): trả tổng theo từng tiền tệ, **bỏ qua ví đã archive** (ví archive đã bị ẩn khỏi danh sách).
 - Cùng một công thức ở server (`GetBalances`, SQL SUM) và mobile (SQLite SUM). Test ở 2 phía dùng chung bộ ca.
+- **Tràn số** (sửa 2026-10-10): mỗi giao dịch tới 10¹⁵, nên ~9.300 khoản tối đa đã vượt `long`. Mobile không dùng thẳng `SUM` (SQLite ném "integer overflow" làm chết cả Flow số dư): cộng riêng thương và dư cho 10⁹ rồi ghép lại, chính xác trong biên `long`, vượt biên thì kẹt ở biên thay vì ném lỗi; tổng nhiều ví cũng cộng bão hoà. Server: `GetBalances` chưa có endpoint; Postgres `SUM(bigint)` ra `numeric` nên không tràn trong SQL, còn đọc về `long` và `Money.plus` (`addExact`) thì ném lỗi. Khi mở endpoint số dư phải chọn: kẹt ở biên như mobile, hay trả lỗi rõ ràng.
 
 ### 6. Danh mục mặc định (D9)
 

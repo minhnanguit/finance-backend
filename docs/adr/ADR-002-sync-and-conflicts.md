@@ -64,7 +64,7 @@ UPDATE user_sync_state SET last_seq = last_seq + 1 WHERE user_id = :me RETURNING
 | `DUPLICATE` | `opId` này đã xử lý xong trước đó | Xoá khỏi outbox |
 | `CONFLICT` | Server giữ bản của mình (đã xoá, S4) | Ghi đè local bằng `current`, xoá khỏi outbox |
 | `REJECTED` + `code` | Vi phạm luật domain / giới hạn / không phải của mình | Bỏ op, khôi phục local theo `current` (null → xoá local), báo UI |
-| `RETRY` | Ví/danh mục được trỏ tới chưa thấy | Giữ trong outbox, thử lại, quá N lần thì park (`SyncEngine` đã có) |
+| `RETRY` | Ví/danh mục được trỏ tới chưa thấy, lỗi tạm của server, 2 lần sửa đụng nhau | Giữ trong outbox, gửi lại sau backoff 15 giây → tối đa 1 giờ. **Không bao giờ bỏ op**; từ lần thứ 5 UI báo "chưa gửi được" (sửa 2026-10-10, trước đây park sau N lần làm mất thay đổi khi server lỗi vài phút) |
 
 **`GET /api/v1/sync/pull?since=&limit=`**
 
@@ -76,6 +76,7 @@ UPDATE user_sync_state SET last_seq = last_seq + 1 WHERE user_id = :me RETURNING
 | Change | `entity`, `id`, `changeSeq`, `deleted`, `data` (null khi `deleted = true`) |
 
 - Client lặp pull tới khi `hasMore = false` rồi mới coi là đồng bộ xong.
+- Bản ghi client chưa đọc được (entity mới, enum mới từ server mới hơn) **không chặn trang** và cũng **không bị bỏ**: client cất vào `sync_deferred` rồi áp lại khi app được nâng cấp, vì cursor đã đi qua nó (sửa 2026-10-10).
 - Một trang được đọc trong **một snapshot** (`REPEATABLE READ`). Mỗi entity là một câu query riêng; ở `READ COMMITTED`, một lần ghi commit giữa 2 câu có thể bị câu đầu bỏ lỡ trong khi câu sau trả số lớn hơn nó, và cursor nhảy qua mất. Trong một snapshot, các số nhìn thấy luôn liền từ 1 vì số được phát dưới row lock.
 - Một trang có thể chứa giao dịch trước ví của nó (ví được sửa sau nên `change_seq` lớn hơn). **Bảng ledger trên mobile không đặt FK**, UI join chịu được bản ghi thiếu.
 
@@ -114,6 +115,7 @@ Mobile ─POST /sync/push─►  modules.sync ──SyncHandler──► ledger/
 **Mỗi op một transaction riêng**, một op lỗi không làm hỏng cả batch:
 
 1. **Transaction của op** (`@Transactional` trên service áp 1 op trong `modules.sync.application.service`, gọi từ service điều phối batch; use case ledger `REQUIRED` join vào):
+   0. **Khoá dòng `user_sync_state` của user** (`SyncStatePort.lockWrites`). Op của cùng một user (2 máy push cùng lúc) chạy lần lượt trọn transaction, nên mọi luật "kiểm tra rồi ghi" của handler (≤ 50 ví, ≤ 300 danh mục, ví còn giao dịch thì không xoá, tham chiếu còn sống) thấy đúng dữ liệu đã commit của request kia. Trước đây khoá chỉ được lấy lúc phát `change_seq`, *sau* bước kiểm tra, nên 2 request cùng thấy 49 ví rồi cùng tạo (sửa 2026-10-10, test `SyncApiIT.parallelCreatesNeverExceedTheAccountLimit`, `deleteRacingWithRecordNeverOrphansATransaction`).
    1. `SELECT outcome FROM sync_ops WHERE user_id = :me AND op_id = :opId`. Có và khác `RETRY` → `DUPLICATE`.
    2. Gọi `handler.apply(me, op)`. Handler dùng upsert có `WHERE user_id = :me` (ADR-006 B1).
    3. `APPLIED` → ghi `sync_ops(user_id, op_id, device_id, entity, entity_id, outcome, code, at)` rồi commit.
@@ -122,7 +124,14 @@ Mobile ─POST /sync/push─►  modules.sync ──SyncHandler──► ledger/
 
 Tách 2 transaction vì use case ledger ném `DomainException` qua proxy `@Transactional` sẽ đánh dấu cả transaction chung là rollback-only; ghi nhật ký trong đó sẽ bị mất cùng op.
 
-2 request mang cùng `opId` chạy song song: request sau bị PK `(user_id, op_id)` chặn ở bước 1.3 → rollback → trả `DUPLICATE`.
+2 request mang cùng `opId` chạy song song: request sau đợi khoá ở bước 1.0 rồi thấy outcome đã chốt ở bước 1.1 → `DUPLICATE`. PK `(user_id, op_id)` ở bước 1.3 vẫn là lớp chặn cuối.
+
+**Thứ tự là việc của client.** Server áp từng op của batch độc lập, theo đúng thứ tự gửi; op trước `RETRY` không chặn op sau. Nên client (mobile `Outbox.sq` `selectEligible`) chỉ đưa vào batch:
+- op **đầu tiên** của mỗi bản ghi: 2 op cùng bản ghi chung batch thì bản cũ (đang `RETRY`) có thể đè bản mới về sau;
+- op đổi ví/danh mục chỉ khi không còn op trước **trỏ tới** nó: archive/xoá ví đi trước giao dịch của ví thì giao dịch bị `REJECTED ledger.archived` / ví bị `ledger.in_use`;
+- client chỉ gộp sửa liên tiếp vào op **cuối** hàng, không gộp vào op giữa hàng (gộp "tạo ví" với "archive ví" ở đầu hàng làm giao dịch ghi giữa hai lần đó bị từ chối rồi bị xoá khỏi máy).
+
+Batch còn bị giới hạn theo dung lượng (≤ 192 KiB ước lượng, dưới mức 256 KiB của server). Server vẫn trả 400/413 cho cả request thì client chia đôi batch tới khi khoanh được op gây lỗi; op đó chờ backoff, các op khác đi tiếp, và pull vẫn chạy.
 
 Pull: mỗi handler trả tối đa `limit` thay đổi có `change_seq > since`; `sync` trộn theo `change_seq`, cắt còn `limit`, `nextCursor` = `change_seq` cuối trang. Đúng vì số là duy nhất trong phạm vi user.
 
@@ -140,7 +149,8 @@ Push 60/phút, pull 120/phút mỗi user. `RateLimitFilter` trong `shared.web`, 
 - Chạy được nhiều instance: sync stateless, lock theo user, rate limit ở Redis chung.
 
 **Chấp nhận**
-- Mọi lần ghi của cùng một user xếp hàng qua 1 row lock. Một người không ghi nhiều tới mức đó; ghi hàng loạt (import) phải chia batch.
+- Mọi lần ghi của cùng một user xếp hàng qua 1 row lock, giữ suốt transaction của từng op. Một người không ghi nhiều tới mức đó; ghi hàng loạt (import) phải chia batch.
+- Máy B archive ví trong lúc máy A (offline) ghi giao dịch mới vào ví đó: giao dịch của A bị `REJECTED ledger.archived` khi A sync. Client không tự tránh được vì 2 thay đổi nằm trên 2 máy. Có nên nới luật `ledger.archived` cho op đến qua sync hay không: **chưa chốt** (xem `docs/LEDGER-PLAN.md`, mục review sau Phase 4).
 - Last-write-wins có thể đè một sửa đổi offline cũ lên bản mới hơn. Đủ cho sổ cá nhân.
 - Tombstone sống mãi trong plan này. Dọn tombstone (và client có cursor cũ hơn mốc dọn phải pull lại từ đầu) thuộc plan #14.
 - Ví chung (#18) sẽ cần luật conflict theo entity. Envelope kết quả từng op đã chừa chỗ.
