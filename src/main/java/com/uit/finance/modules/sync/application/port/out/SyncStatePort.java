@@ -9,6 +9,13 @@ public interface SyncStatePort {
   boolean isInitialized(UserId owner);
 
   /**
+   * Khoá dòng của user tới hết transaction (tạo dòng nếu chưa có). Mọi lần ghi của cùng một user
+   * xếp hàng ở đây, nên luật kiểu "đếm rồi ghi" (≤ 50 ví, ví còn giao dịch thì không xoá...) không
+   * bị một request song song lách qua. User khác nhau không chờ nhau (ADR-002 §7).
+   */
+  void lockWrites(UserId owner);
+
+  /**
    * Khoá dòng của user tới hết transaction (tạo dòng nếu chưa có).
    *
    * @return {@code true} nếu user vẫn chưa được khởi tạo, đọc sau khi đã giữ khoá

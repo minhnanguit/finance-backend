@@ -71,6 +71,11 @@ class JdbcUserSyncState implements ChangeSequencer, SyncStatePort {
   // ---- SyncStatePort ----
 
   @Override
+  public void lockWrites(UserId owner) {
+    lock(owner);
+  }
+
+  @Override
   public boolean isInitialized(UserId owner) {
     return jdbc.sql(
             "SELECT initialized_at IS NOT NULL FROM user_sync_state WHERE user_id = :userId")

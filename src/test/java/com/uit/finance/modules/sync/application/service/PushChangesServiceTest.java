@@ -45,7 +45,7 @@ class PushChangesServiceTest {
     service =
         new PushChangesService(
             new UserSyncInitializer(state, handlers, clock),
-            new ApplyOpService(opLog, handlers, clock),
+            new ApplyOpService(state, opLog, handlers, clock),
             new RecordOpOutcomeService(opLog, handlers, clock));
   }
 
@@ -69,6 +69,15 @@ class PushChangesServiceTest {
     assertThat(result.current()).isNotNull();
     assertThat(opLog.entries.get(op.opId()).deviceId().value()).isEqualTo("device-1");
     assertThat(opLog.entries.get(op.opId()).processedAt()).isEqualTo(NOW);
+  }
+
+  @Test
+  @DisplayName(
+      "mỗi op khoá dòng của user trước khi áp, để luật kiểm-rồi-ghi không bị request song song lách")
+  void everyOpTakesTheUserWriteLock() {
+    push(op("account"), op("account"));
+
+    assertThat(state.writeLocks).containsExactly(ANN, ANN);
   }
 
   @Test

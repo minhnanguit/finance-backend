@@ -500,4 +500,84 @@ class SyncApiIT {
     assertThat(changeSeqs(ann.user().id()))
         .isEqualTo(LongStream.rangeClosed(1, 16 + 1 + 20).boxed().toList());
   }
+
+  /** Chạy các batch push của cùng một user song song (2 máy cùng sync), trả kết quả của mọi op. */
+  private List<JsonNode> pushInParallel(User user, List<List<Map<String, Object>>> batches)
+      throws Exception {
+    ExecutorService pool = Executors.newFixedThreadPool(batches.size());
+    try {
+      List<Callable<JsonNode>> requests = new ArrayList<>();
+      for (List<Map<String, Object>> batch : batches) {
+        requests.add(() -> api.json(push(user, batch)).get("results"));
+      }
+      List<JsonNode> all = new ArrayList<>();
+      for (Future<JsonNode> done : pool.invokeAll(requests)) {
+        done.get().forEach(all::add);
+      }
+      return all;
+    } finally {
+      pool.shutdown();
+    }
+  }
+
+  @Test
+  @DisplayName("2 máy cùng tạo ví khi gần giới hạn: tổng không bao giờ vượt 50 (review Phase 4 #7)")
+  void parallelCreatesNeverExceedTheAccountLimit() throws Exception {
+    Ledger ann = ledger();
+    List<Map<String, Object>> filler = new ArrayList<>();
+    for (int i = 0; i < 39; i++) {
+      filler.add(upsertAccount(UUID.randomUUID()));
+    }
+    assertThat(push(ann.user(), filler).getStatusCode().value()).isEqualTo(200); // 40 ví
+
+    List<List<Map<String, Object>>> devices = new ArrayList<>();
+    for (int device = 0; device < 2; device++) {
+      List<Map<String, Object>> creates = new ArrayList<>();
+      for (int i = 0; i < 10; i++) {
+        creates.add(upsertAccount(UUID.randomUUID()));
+      }
+      devices.add(creates);
+    }
+    List<JsonNode> results = pushInParallel(ann.user(), devices);
+
+    long applied = results.stream().filter(r -> outcome(r).equals("APPLIED")).count();
+    assertThat(applied).isEqualTo(10);
+    assertThat(results.stream().filter(r -> outcome(r).equals("REJECTED")).map(SyncApiIT::code))
+        .hasSize(10)
+        .allMatch("ledger.limit_exceeded"::equals);
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM accounts WHERE user_id = :u AND deleted_at IS NULL")
+                .param("u", ann.user().id())
+                .query(Long.class)
+                .single())
+        .isEqualTo(50);
+  }
+
+  @Test
+  @DisplayName(
+      "máy A xoá ví đúng lúc máy B ghi giao dịch vào ví: không bao giờ còn giao dịch sống trong ví đã xoá")
+  void deleteRacingWithRecordNeverOrphansATransaction() throws Exception {
+    Ledger ann = ledger();
+    for (int round = 0; round < 8; round++) {
+      UUID wallet = UUID.randomUUID();
+      pushOk(ann.user(), upsertAccount(wallet));
+
+      pushInParallel(
+          ann.user(),
+          List.of(
+              List.of(delete("account", wallet)),
+              List.of(upsertExpense(UUID.randomUUID(), wallet, ann.food(), 1_000))));
+    }
+
+    long orphans =
+        jdbc.sql(
+                """
+                SELECT count(*) FROM transactions t JOIN accounts a ON a.id = t.account_id
+                WHERE t.user_id = :u AND t.deleted_at IS NULL AND a.deleted_at IS NOT NULL
+                """)
+            .param("u", ann.user().id())
+            .query(Long.class)
+            .single();
+    assertThat(orphans).isZero();
+  }
 }

@@ -100,6 +100,12 @@ final class SyncFakes {
   static final class State implements SyncStatePort {
 
     final Set<UserId> initialized = new HashSet<>();
+    final List<UserId> writeLocks = new ArrayList<>();
+
+    @Override
+    public void lockWrites(UserId owner) {
+      writeLocks.add(owner);
+    }
 
     @Override
     public boolean isInitialized(UserId owner) {
