@@ -42,7 +42,7 @@ public final class Transaction extends AggregateRoot {
       TransactionReferences references,
       LocalDate today,
       Instant now) {
-    TransactionRules.check(owner, details, references, today, null);
+    TransactionRules.check(owner, details, references, today);
     Transaction transaction = new Transaction(id, owner, details, null);
     transaction.registerEvent(TransactionRecorded.of(transaction, now));
     return transaction;
@@ -66,7 +66,7 @@ public final class Transaction extends AggregateRoot {
     if (next.equals(details)) {
       return false;
     }
-    TransactionRules.check(owner, next, references.get(), today, details);
+    TransactionRules.check(owner, next, references.get(), today);
     details = next;
     registerEvent(TransactionUpdated.of(this, now));
     return true;

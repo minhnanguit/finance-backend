@@ -61,7 +61,6 @@ Cột hệ thống (mọi bảng, chỉ server điền, ADR-006 B3):
 | Loại danh mục khớp loại giao dịch (`INCOME` ↔ `INCOME`) | `ledger.category_kind_mismatch` | VALIDATION |
 | Tiền tệ giao dịch = tiền tệ ví | `ledger.currency_mismatch` | VALIDATION |
 | Chuyển tiền: 2 ví khác nhau, cùng tiền tệ | `ledger.invalid_transfer` | VALIDATION |
-| Không **gắn mới** giao dịch hoặc danh mục con vào ví/danh mục đã archive. Giao dịch cũ vẫn sửa được (vd sửa ghi chú) | `ledger.archived` | BUSINESS_RULE |
 | Không đổi tiền tệ ví đã có giao dịch (D8) | `ledger.currency_locked` | BUSINESS_RULE |
 | Không xoá ví/danh mục đã có giao dịch (D7) | `ledger.in_use` | BUSINESS_RULE |
 | Không đổi `kind` của danh mục | `ledger.kind_immutable` | VALIDATION |
@@ -71,6 +70,8 @@ Cột hệ thống (mọi bảng, chỉ server điền, ADR-006 B3):
 | Ví/danh mục không phải của user, hoặc đã xoá (ADR-006 B1, B2) | `ledger.not_found` | NOT_FOUND |
 | Ví/danh mục **được trỏ tới** chưa thấy: chưa sync tới, hoặc của user khác. Sync đổi thành `RETRY` | `ledger.reference_pending` | BUSINESS_RULE |
 | Sửa, archive hay tạo lại bản ghi đã xoá (xoá luôn thắng, ADR-002 S4). Sync đổi thành `CONFLICT` | `ledger.deleted` | CONFLICT |
+
+**Archive chỉ là ẩn** (sửa 2026-10-12, bỏ mã `ledger.archived`): ví/danh mục đã archive vẫn nhận giao dịch và danh mục con mới. Client không cho chọn chúng ở form, nhưng op đến qua sync phải được nhận — máy B archive trong lúc máy A offline ghi vào thì từ chối là mất giao dịch của A (ADR-002 §Consequences). Archive vẫn có tác dụng: ẩn khỏi danh sách chọn, không vào tổng số dư (§5).
 
 "Đã có giao dịch" = có ít nhất 1 giao dịch **chưa xoá** trỏ vào (kể cả `DRAFT`, kể cả qua `counter_account_id`). Với danh mục, còn danh mục con chưa xoá cũng tính là đang dùng.
 
@@ -148,7 +149,7 @@ Mọi index bắt đầu bằng `user_id` (trừ 2 index theo ví, vốn đã th
 
 **Chấp nhận**
 - Phí chuyển khoản là 2 op độc lập. Hiếm khi op phí bị `REJECTED` trong lúc op chuyển được `APPLIED`; client báo lỗi để user ghi lại, không có liên kết cứng giữa 2 dòng trong v1.
-- Giao dịch offline ghi vào ví mà máy khác vừa archive sẽ bị `REJECTED ledger.archived`. Mobile báo cho user, không tự nuốt.
+- Giao dịch offline ghi vào ví mà máy khác vừa archive vẫn được nhận và nằm trong ví đã ẩn; số dư của ví đó vẫn đúng, chỉ không vào tổng (§5). Muốn thấy thì bỏ archive.
 - Chuyển tiền khác tiền tệ chưa hỗ trợ. Khi cần: thêm `counter_amount_minor` + `counter_currency`, không đổi mô hình 1 dòng.
 - Không có FK sang `users` nên xoá user phải xoá dữ liệu ledger bằng event (plan #14).
 

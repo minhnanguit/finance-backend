@@ -151,7 +151,6 @@ public final class Account extends AggregateRoot implements Referenceable {
     return owner.equals(user);
   }
 
-  @Override
   public boolean isArchived() {
     return archivedAt != null;
   }

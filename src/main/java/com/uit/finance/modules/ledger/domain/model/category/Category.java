@@ -156,7 +156,6 @@ public final class Category extends AggregateRoot implements Referenceable {
     if (parent.kind != kind) {
       throw new InvalidParentException("parent must have the same kind");
     }
-    References.requireAttachable(parent, true);
   }
 
   public CategoryId getId() {
@@ -202,7 +201,6 @@ public final class Category extends AggregateRoot implements Referenceable {
     return owner.equals(user);
   }
 
-  @Override
   public boolean isArchived() {
     return archivedAt != null;
   }

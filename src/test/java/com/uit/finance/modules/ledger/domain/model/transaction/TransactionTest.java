@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.uit.finance.modules.ledger.domain.event.TransactionDeleted;
 import com.uit.finance.modules.ledger.domain.event.TransactionRecorded;
 import com.uit.finance.modules.ledger.domain.event.TransactionUpdated;
-import com.uit.finance.modules.ledger.domain.exception.ArchivedException;
 import com.uit.finance.modules.ledger.domain.exception.CategoryKindMismatchException;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InvalidTransferException;
@@ -141,17 +140,17 @@ class TransactionTest {
   }
 
   @Test
-  @DisplayName("không gắn giao dịch mới vào ví hay danh mục đã archive")
-  void cannotAttachToArchived() {
+  @DisplayName(
+      "archive chỉ là ẩn: giao dịch mới vẫn ghi được vào ví, ví đến và danh mục đã archive")
+  void archivedReferencesStayAttachable() {
+    // Máy B archive trong lúc máy A offline ghi giao dịch: op của A tới sau vẫn phải được nhận.
     Account old = archived(account(ANN, "VND"));
     Category oldCategory = category(ANN, CategoryKind.EXPENSE);
     oldCategory.changeArchived(true, NOW);
 
-    assertRejected(
-        () -> record(expense(old, food).build(), refs(old, food)), ArchivedException.CODE);
-    assertRejected(
-        () -> record(expense(wallet, oldCategory).build(), refs(wallet, oldCategory)),
-        ArchivedException.CODE);
+    assertThat(record(expense(old, food).build(), refs(old, food))).isNotNull();
+    assertThat(record(expense(wallet, oldCategory).build(), refs(wallet, oldCategory))).isNotNull();
+    assertThat(record(transfer(wallet, old).build(), transferRefs(wallet, old))).isNotNull();
   }
 
   @Test
@@ -174,14 +173,16 @@ class TransactionTest {
   }
 
   @Test
-  @DisplayName("chuyển giao dịch sang ví đã archive thì bị chặn")
-  void movingIntoArchivedAccountIsRejected() {
+  @DisplayName("chuyển giao dịch sang ví đã archive vẫn được")
+  void movingIntoArchivedAccountIsAllowed() {
     Transaction transaction = recordedExpense();
     Account old = archived(account(ANN, "VND"));
 
-    assertRejected(
-        () -> transaction.revise(expense(old, food).build(), () -> refs(old, food), TODAY, NOW),
-        ArchivedException.CODE);
+    boolean changed =
+        transaction.revise(expense(old, food).build(), () -> refs(old, food), TODAY, NOW);
+
+    assertThat(changed).isTrue();
+    assertThat(transaction.getDetails().accountId()).isEqualTo(old.getId());
   }
 
   @Test

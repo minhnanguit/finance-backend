@@ -13,38 +13,30 @@ import com.uit.finance.modules.ledger.domain.model.shared.References;
 import com.uit.finance.shared.kernel.Ensure;
 import com.uit.finance.shared.kernel.UserId;
 import java.time.LocalDate;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
-/** Luật của giao dịch cần tới ví và danh mục thật (ADR-005 §3). */
+/**
+ * Luật của giao dịch cần tới ví và danh mục thật (ADR-005 §3). Ví/danh mục đã archive vẫn trỏ tới
+ * được, xem {@link References}.
+ */
 final class TransactionRules {
 
   private TransactionRules() {}
 
-  /**
-   * @param previous bản trước khi sửa, {@code null} khi tạo mới. Dùng để chỉ chặn archive khi giao
-   *     dịch được gắn mới vào ví hoặc danh mục đó.
-   */
   static void check(
-      UserId owner,
-      TransactionDetails next,
-      TransactionReferences references,
-      LocalDate today,
-      @Nullable TransactionDetails previous) {
+      UserId owner, TransactionDetails next, TransactionReferences references, LocalDate today) {
     checkDate(next.occurredOn(), today);
 
     Account account = references.account();
     References.requireVisible(owner, account);
-    References.requireAttachable(
-        account, previous == null || !previous.accountId().equals(next.accountId()));
     if (!next.amount().currency().equals(account.currency())) {
       throw new TransactionCurrencyMismatchException();
     }
 
     if (next.type().isTransfer()) {
-      checkTransfer(owner, next, account, references.counterAccount(), previous);
+      checkTransfer(owner, account, references.counterAccount());
     } else {
-      checkCategory(owner, next, references.category(), previous);
+      checkCategory(owner, next, references.category());
     }
   }
 
@@ -55,30 +47,18 @@ final class TransactionRules {
   }
 
   private static void checkTransfer(
-      UserId owner,
-      TransactionDetails next,
-      Account account,
-      @Nullable Account counterAccount,
-      @Nullable TransactionDetails previous) {
+      UserId owner, Account account, @Nullable Account counterAccount) {
     Account counter = Ensure.notNull(counterAccount, "counterAccount");
     References.requireVisible(owner, counter);
-    References.requireAttachable(
-        counter,
-        previous == null || !Objects.equals(previous.counterAccountId(), next.counterAccountId()));
     if (!counter.currency().equals(account.currency())) {
       throw new InvalidTransferException("both accounts must use the same currency");
     }
   }
 
   private static void checkCategory(
-      UserId owner,
-      TransactionDetails next,
-      @Nullable Category referenced,
-      @Nullable TransactionDetails previous) {
+      UserId owner, TransactionDetails next, @Nullable Category referenced) {
     Category category = Ensure.notNull(referenced, "category");
     References.requireVisible(owner, category);
-    References.requireAttachable(
-        category, previous == null || !Objects.equals(previous.categoryId(), next.categoryId()));
     if (category.getKind() != next.type().categoryKind()) {
       throw new CategoryKindMismatchException();
     }

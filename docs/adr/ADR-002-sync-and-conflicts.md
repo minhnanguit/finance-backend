@@ -128,8 +128,8 @@ Tách 2 transaction vì use case ledger ném `DomainException` qua proxy `@Trans
 
 **Thứ tự là việc của client.** Server áp từng op của batch độc lập, theo đúng thứ tự gửi; op trước `RETRY` không chặn op sau. Nên client (mobile `Outbox.sq` `selectEligible`) chỉ đưa vào batch:
 - op **đầu tiên** của mỗi bản ghi: 2 op cùng bản ghi chung batch thì bản cũ (đang `RETRY`) có thể đè bản mới về sau;
-- op đổi ví/danh mục chỉ khi không còn op trước **trỏ tới** nó: archive/xoá ví đi trước giao dịch của ví thì giao dịch bị `REJECTED ledger.archived` / ví bị `ledger.in_use`;
-- client chỉ gộp sửa liên tiếp vào op **cuối** hàng, không gộp vào op giữa hàng (gộp "tạo ví" với "archive ví" ở đầu hàng làm giao dịch ghi giữa hai lần đó bị từ chối rồi bị xoá khỏi máy).
+- op đổi ví/danh mục chỉ khi không còn op trước **trỏ tới** nó: xoá ví đi trước giao dịch của ví thì giao dịch bị `RETRY`/`ledger.not_found` còn ví bị `ledger.in_use` (archive thì không còn chặn, xem dưới);
+- client chỉ gộp sửa liên tiếp vào op **cuối** hàng, không gộp vào op giữa hàng (gộp 2 lần sửa cách nhau bởi op khác có thể đảo thứ tự mà user đã thấy trên máy).
 
 Batch còn bị giới hạn theo dung lượng (≤ 192 KiB ước lượng, dưới mức 256 KiB của server). Server vẫn trả 400/413 cho cả request thì client chia đôi batch tới khi khoanh được op gây lỗi; op đó chờ backoff, các op khác đi tiếp, và pull vẫn chạy.
 
@@ -150,7 +150,7 @@ Push 60/phút, pull 120/phút mỗi user. `RateLimitFilter` trong `shared.web`, 
 
 **Chấp nhận**
 - Mọi lần ghi của cùng một user xếp hàng qua 1 row lock, giữ suốt transaction của từng op. Một người không ghi nhiều tới mức đó; ghi hàng loạt (import) phải chia batch.
-- Máy B archive ví trong lúc máy A (offline) ghi giao dịch mới vào ví đó: giao dịch của A bị `REJECTED ledger.archived` khi A sync. Client không tự tránh được vì 2 thay đổi nằm trên 2 máy. Có nên nới luật `ledger.archived` cho op đến qua sync hay không: **chưa chốt** (xem `docs/LEDGER-PLAN.md`, mục review sau Phase 4).
+- Máy B archive ví trong lúc máy A (offline) ghi giao dịch mới vào ví đó: **chốt 2026-10-12, giao dịch của A được nhận** (`APPLIED`). Archive chỉ là ẩn khỏi danh sách chọn, không chặn ghi (ADR-005 §3); client tự không cho chọn ví/danh mục đã archive. Từ chối thì giao dịch bị xoá khỏi máy A — mất dữ liệu thật, tệ hơn nhiều so với một dòng nằm trong ví đã ẩn.
 - Last-write-wins có thể đè một sửa đổi offline cũ lên bản mới hơn. Đủ cho sổ cá nhân.
 - Tombstone sống mãi trong plan này. Dọn tombstone (và client có cursor cũ hơn mốc dọn phải pull lại từ đầu) thuộc plan #14.
 - Ví chung (#18) sẽ cần luật conflict theo entity. Envelope kết quả từng op đã chừa chỗ.

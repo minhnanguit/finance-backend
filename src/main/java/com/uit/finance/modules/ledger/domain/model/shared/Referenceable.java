@@ -13,6 +13,4 @@ public interface Referenceable {
   boolean isOwnedBy(UserId owner);
 
   boolean isDeleted();
-
-  boolean isArchived();
 }

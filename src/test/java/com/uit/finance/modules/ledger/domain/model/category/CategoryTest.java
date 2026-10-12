@@ -8,7 +8,6 @@ import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.assertR
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.category;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.uit.finance.modules.ledger.domain.exception.ArchivedException;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.InvalidParentException;
@@ -93,13 +92,14 @@ class CategoryTest {
   }
 
   @Test
-  @DisplayName("cha đã archive thì không gắn con mới; cha của user khác là not_found")
-  void parentMustBeUsable() {
+  @DisplayName(
+      "cha đã archive vẫn nhận con mới (archive chỉ là ẩn); cha của user khác là not_found")
+  void parentMustBeVisible() {
     Category archived = category(ANN, CategoryKind.EXPENSE);
     archived.changeArchived(true, NOW);
     Category foreign = category(BOB, CategoryKind.EXPENSE);
 
-    assertRejected(() -> childOf(archived), ArchivedException.CODE);
+    assertThat(childOf(archived).getDetails().parentId()).isEqualTo(archived.getId());
     assertRejected(() -> childOf(foreign), LedgerNotFoundException.CODE);
   }
 

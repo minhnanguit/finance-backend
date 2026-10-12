@@ -2,8 +2,8 @@ package com.uit.finance.modules.ledger.adapter.in.sync.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.uit.finance.modules.ledger.domain.exception.ArchivedException;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
+import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.ReferencePendingException;
 import com.uit.finance.modules.ledger.domain.model.shared.LedgerEntity;
 import com.uit.finance.shared.sync.SyncOpResult;
@@ -31,8 +31,8 @@ class LedgerSyncVerdictsTest {
         .isEqualTo(new SyncOpResult(SyncOutcome.RETRY, ReferencePendingException.CODE));
     assertThat(failingWith(new EntityDeletedException(LedgerEntity.TRANSACTION, id)))
         .isEqualTo(new SyncOpResult(SyncOutcome.CONFLICT, EntityDeletedException.CODE));
-    assertThat(failingWith(new ArchivedException(LedgerEntity.ACCOUNT, id)))
-        .isEqualTo(new SyncOpResult(SyncOutcome.REJECTED, ArchivedException.CODE));
+    assertThat(failingWith(new InUseException(LedgerEntity.ACCOUNT, id)))
+        .isEqualTo(new SyncOpResult(SyncOutcome.REJECTED, InUseException.CODE));
   }
 
   @Test

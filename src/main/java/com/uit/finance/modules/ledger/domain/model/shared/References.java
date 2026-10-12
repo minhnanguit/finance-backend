@@ -1,10 +1,15 @@
 package com.uit.finance.modules.ledger.domain.model.shared;
 
-import com.uit.finance.modules.ledger.domain.exception.ArchivedException;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.shared.kernel.UserId;
 
-/** Luật chung khi trỏ tới ví hoặc danh mục. */
+/**
+ * Luật chung khi trỏ tới ví hoặc danh mục.
+ *
+ * <p>Archive <b>không</b> chặn việc trỏ tới: nó chỉ ẩn bản ghi khỏi danh sách chọn ở client. Máy A
+ * offline ghi vào ví mà máy B vừa archive vẫn phải được nhận, nếu không giao dịch bị từ chối rồi
+ * mất khỏi máy A (ADR-005 §3).
+ */
 public final class References {
 
   private References() {}
@@ -16,16 +21,6 @@ public final class References {
   public static void requireVisible(UserId owner, Referenceable target) {
     if (!target.isOwnedBy(owner) || target.isDeleted()) {
       throw new LedgerNotFoundException(target.entity(), target.uuid());
-    }
-  }
-
-  /**
-   * Chỉ chặn khi gắn mới vào bản ghi đã archive. Bản ghi cũ vẫn trỏ vào đó thì vẫn sửa được, để
-   * user còn sửa được ghi chú của giao dịch cũ sau khi archive ví.
-   */
-  public static void requireAttachable(Referenceable target, boolean newlyAttached) {
-    if (newlyAttached && target.isArchived()) {
-      throw new ArchivedException(target.entity(), target.uuid());
     }
   }
 }

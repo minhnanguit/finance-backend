@@ -95,15 +95,15 @@ class PushChangesServiceTest {
   @Test
   @DisplayName("REJECTED được ghi nhật ký với mã lỗi; gửi lại cũng là DUPLICATE")
   void rejectedIsFinal() {
-    handlers.verdicts = op -> new OpVerdict(OpOutcome.REJECTED, "ledger.archived");
+    handlers.verdicts = op -> new OpVerdict(OpOutcome.REJECTED, "ledger.in_use");
     PushedOp op = op("account");
 
     OpResult first = push(op).getFirst();
     OpResult again = push(op).getFirst();
 
     assertThat(first.outcome()).isEqualTo(OpOutcome.REJECTED);
-    assertThat(first.code()).isEqualTo("ledger.archived");
-    assertThat(opLog.entries.get(op.opId()).code()).isEqualTo("ledger.archived");
+    assertThat(first.code()).isEqualTo("ledger.in_use");
+    assertThat(opLog.entries.get(op.opId()).code()).isEqualTo("ledger.in_use");
     assertThat(again.outcome()).isEqualTo(OpOutcome.DUPLICATE);
   }
 

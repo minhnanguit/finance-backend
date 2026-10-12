@@ -453,6 +453,30 @@ class SyncApiIT {
   }
 
   @Test
+  @DisplayName("máy B archive ví lúc máy A offline ghi vào ví đó → giao dịch của A vẫn APPLIED")
+  void offlineWriteIntoAccountArchivedByAnotherDevice() {
+    Ledger ann = ledger();
+    Map<String, Object> archive = upsertAccount(ann.account());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> accountData = (Map<String, Object>) archive.get("data");
+    accountData.put("archived", true);
+    pushOk(ann.user(), archive);
+
+    UUID tx = UUID.randomUUID();
+    JsonNode result =
+        pushOk(ann.user(), upsertExpense(tx, ann.account(), ann.food(), 7_000)).get(0);
+
+    assertThat(outcome(result)).isEqualTo("APPLIED");
+    assertThat(code(result)).isNull();
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM transactions WHERE id = :id AND deleted_at IS NULL")
+                .param("id", tx)
+                .query(Long.class)
+                .single())
+        .isEqualTo(1L);
+  }
+
+  @Test
   @DisplayName("một op lỗi không làm hỏng op khác trong cùng batch, kết quả đúng thứ tự")
   void oneBadOpDoesNotSpoilTheBatch() {
     Ledger ann = ledger();
