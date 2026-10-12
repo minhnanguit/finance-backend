@@ -75,7 +75,7 @@ management:
 
 springdoc:
   api-docs:
-    enabled: false # the contract is authored, not derived from code
+    enabled: true
   swagger-ui:
     url: /openapi.yaml
     path: /swagger-ui.html
@@ -91,6 +91,27 @@ app:
   identity:
     subject-cache-ttl: 10m
     subject-cache-size: 10000
+  # Giới hạn theo endpoint (ADR-006 B4). Thêm endpoint = thêm dòng, không sửa code.
+  request-limits:
+    rate-limit-enabled: true
+    rate-limits:
+      - name: sync-push
+        method: POST
+        path: /api/v1/sync/push
+        limit: 60
+        window: 1m
+      - name: sync-pull
+        method: GET
+        path: /api/v1/sync/pull
+        limit: 120
+        window: 1m
+    body-limits:
+      - method: POST
+        path: /api/v1/sync/push
+        max-size: 256KB
+  sync:
+    op-log-retention: 30d
+    op-log-purge-cron: "0 30 3 * * *"
   idempotency:
     ttl: 24h
     in-progress-ttl: 30s

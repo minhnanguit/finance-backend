@@ -1,6 +1,8 @@
 package com.uit.finance.shared.security;
 
 import com.uit.finance.shared.web.idempotency.IdempotencyFilter;
+import com.uit.finance.shared.web.limit.BodySizeLimitFilter;
+import com.uit.finance.shared.web.limit.RateLimitFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -42,6 +44,8 @@ class SecurityConfiguration {
   SecurityFilterChain apiSecurityFilterChain(
       HttpSecurity http,
       ProblemAuthenticationEntryPoint problemHandler,
+      RateLimitFilter rateLimitFilter,
+      BodySizeLimitFilter bodySizeLimitFilter,
       IdempotencyFilter idempotencyFilter,
       CurrentUserResolver currentUserResolver)
       throws Exception {
@@ -69,8 +73,11 @@ class SecurityConfiguration {
                 handling
                     .authenticationEntryPoint(problemHandler)
                     .accessDeniedHandler(problemHandler))
-        // Đặt sau authorization để idempotency key được scope theo authenticated user.
-        .addFilterAfter(idempotencyFilter, AuthorizationFilter.class)
+        // Sau authorization để đếm và scope theo user. Thứ tự: rate limit (rẻ nhất, chặn spam
+        // trước) → giới hạn body (trước khi đọc body) → idempotency (đọc cả body vào bộ nhớ).
+        .addFilterAfter(rateLimitFilter, AuthorizationFilter.class)
+        .addFilterAfter(bodySizeLimitFilter, RateLimitFilter.class)
+        .addFilterAfter(idempotencyFilter, BodySizeLimitFilter.class)
         .build();
   }
 }

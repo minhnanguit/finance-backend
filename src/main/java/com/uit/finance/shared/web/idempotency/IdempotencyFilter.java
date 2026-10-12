@@ -1,5 +1,6 @@
 package com.uit.finance.shared.web.idempotency;
 
+import com.uit.finance.shared.web.CachedBodyHttpServletRequest;
 import com.uit.finance.shared.web.ProblemDetailFactory;
 import com.uit.finance.shared.web.ProblemDetailWriter;
 import jakarta.servlet.FilterChain;

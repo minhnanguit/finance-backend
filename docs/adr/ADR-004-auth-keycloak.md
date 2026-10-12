@@ -17,7 +17,7 @@ Dùng **Keycloak self-host** làm IdP duy nhất. Backend **không còn phát h�
 | 1 | Keycloak là IdP duy nhất. Bỏ hoàn toàn password hash và refresh token khỏi `finance-backend` |
 | 2 | Backend là **OAuth2 Resource Server thuần**: verify JWT qua JWKS của Keycloak, bắt buộc validate `aud = finance-api` |
 | 3 | Mobile là **public client**, dùng **Authorization Code + PKCE (S256)**, mở system browser. Không WebView, không client secret, **không** Resource Owner Password Grant (deprecated, OAuth 2.1 đã loại bỏ) |
-| 4 | **`users.id` nội bộ là khoá ngoại của mọi bảng nghiệp vụ.** `sub` của Keycloak chỉ nằm ở cột `users.external_subject` (UNIQUE) |
+| 4 | **`user_id` của mọi bảng nghiệp vụ mang giá trị `users.id` nội bộ.** `sub` của Keycloak chỉ nằm ở cột `users.external_subject` (UNIQUE). Bảng của module khác **không đặt FK constraint** sang `users` (sửa 2026-09-29, ADR-005) |
 | 5 | Realm cấu hình dạng **file JSON commit trong repo** (`deploy/keycloak/realm-finance.json`), không click trên Admin UI |
 | 6 | **Không gọi Keycloak Admin API trong request path.** Cùng nguyên tắc với luật "RabbitMQ không nằm trong request path" |
 | 7 | User local tạo bằng **JIT provisioning**: lần đầu thấy `sub` mới thì `INSERT ... ON CONFLICT DO NOTHING`, có cache in-memory để không đụng DB mỗi request |
@@ -72,7 +72,7 @@ Brute force detection · password policy (≥ 12 ký tự, không trùng usernam
 - Thêm một deployable phải backup, giám sát, và cố định hostname.
 
 **Ràng buộc kéo dài:**
-- Không bảng nghiệp vụ nào được trỏ khoá ngoại vào `sub` của Keycloak. Vi phạm điều này thì đổi IdP sau phải migrate cả DB.
+- Không bảng nghiệp vụ nào được lưu hay trỏ vào `sub` của Keycloak. Vi phạm điều này thì đổi IdP sau phải migrate cả DB.
 - `KC_HOSTNAME` phải cố định ngay từ môi trường dev. Issuer nằm trong token; đổi sau làm hỏng mọi token đang lưu.
 
 ## References
