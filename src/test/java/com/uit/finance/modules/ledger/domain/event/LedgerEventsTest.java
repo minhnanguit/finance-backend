@@ -6,6 +6,7 @@ import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -25,6 +26,16 @@ class LedgerEventsTest {
   void payloadCarriesOnlyIds(Class<?> event) {
     assertThat(Arrays.stream(event.getRecordComponents()).map(RecordComponent::getName))
         .containsExactlyElementsOf(ALLOWED);
+  }
+
+  @Test
+  @DisplayName("CategoryChanged chỉ mang id danh mục và user, routing key ledger.category.changed")
+  void categoryChangedCarriesOnlyIds() {
+    assertThat(
+            Arrays.stream(CategoryChanged.class.getRecordComponents())
+                .map(RecordComponent::getName))
+        .containsExactly("eventId", "occurredAt", "categoryId", "userId");
+    assertThat(CategoryChanged.TYPE).isEqualTo("ledger.category.changed");
   }
 
   @ParameterizedTest

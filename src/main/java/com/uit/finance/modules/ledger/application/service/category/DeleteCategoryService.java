@@ -9,6 +9,7 @@ import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
 import com.uit.finance.modules.ledger.domain.model.category.Category;
 import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
 import com.uit.finance.modules.ledger.domain.model.shared.LedgerEntity;
+import com.uit.finance.shared.kernel.DomainEventPublisher;
 import com.uit.finance.shared.kernel.UserId;
 import java.time.Clock;
 import org.springframework.stereotype.Service;
@@ -21,16 +22,19 @@ class DeleteCategoryService implements DeleteCategoryUseCase {
   private final LoadCategoryPort loadCategory;
   private final SaveCategoryPort saveCategory;
   private final CategoryUsagePort usage;
+  private final DomainEventPublisher events;
   private final Clock clock;
 
   DeleteCategoryService(
       LoadCategoryPort loadCategory,
       SaveCategoryPort saveCategory,
       CategoryUsagePort usage,
+      DomainEventPublisher events,
       Clock clock) {
     this.loadCategory = loadCategory;
     this.saveCategory = saveCategory;
     this.usage = usage;
+    this.events = events;
     this.clock = clock;
   }
 
@@ -49,6 +53,7 @@ class DeleteCategoryService implements DeleteCategoryUseCase {
             () -> usage.isReferenced(owner, id) || usage.hasActiveChildren(owner, id));
     if (deleted) {
       saveCategory.update(owner, category);
+      events.publishAll(category.pullDomainEvents());
     }
     return CategoryView.from(category);
   }
