@@ -124,7 +124,7 @@ class PushChangesServiceTest {
   @Test
   @DisplayName("entity lạ: REJECTED sync.unknown_entity, current null")
   void unknownEntity() {
-    OpResult result = push(op("budget")).getFirst();
+    OpResult result = push(op("recurring")).getFirst();
 
     assertThat(result.outcome()).isEqualTo(OpOutcome.REJECTED);
     assertThat(result.code()).isEqualTo(OpVerdict.UNKNOWN_ENTITY);
