@@ -55,7 +55,7 @@ rabbit: ## Mở trang quản trị RabbitMQ (tài khoản finance / finance)
 # ---------- Keycloak ----------
 
 kc: ## Mở Keycloak Admin Console (tài khoản admin / admin)
-	@open http://localhost:8081/admin
+	@open http://localhost:8082/admin
 
 mail: ## Mở Mailpit để đọc mail verify / reset password Keycloak gửi
 	@open http://localhost:8025
@@ -71,7 +71,7 @@ kc-db: ## Tạo database `keycloak` thủ công — chỉ cần khi volume postg
 tunnel: ## Bật HTTPS công khai *.trycloudflare.com (Caddy + cloudflared trong docker); URL đổi mỗi lần bật lại
 	@deploy/tunnel.sh up
 
-tunnel-off: ## Tắt tunnel, Keycloak quay về http://10.0.2.2:8081
+tunnel-off: ## Tắt tunnel, Keycloak quay về http://10.0.2.2:8082
 	@deploy/tunnel.sh down
 
 tunnel-url: ## In URL tunnel đang dùng

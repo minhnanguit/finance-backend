@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bật / tắt public HTTPS cho Keycloak + API qua Cloudflare Quick Tunnel (*.trycloudflare.com).
 #   deploy/tunnel.sh up      bật tunnel, ghi KC_PUBLIC_URL vào deploy/.env, recreate Keycloak
-#   deploy/tunnel.sh down    tắt tunnel, Keycloak quay về http://10.0.2.2:8081
+#   deploy/tunnel.sh down    tắt tunnel, Keycloak quay về http://10.0.2.2:8082
 #   deploy/tunnel.sh url     in URL đang dùng
 #
 # Hai chế độ (TUNNEL_MODE):
@@ -39,7 +39,7 @@ native_running() { [[ -f $STATE_DIR/$1.pid ]] && kill -0 "$(cat "$STATE_DIR/$1.p
 native_start() {
   mkdir -p "$STATE_DIR"
   if ! native_running edge; then
-    EDGE_LISTEN=":$EDGE_PORT" KEYCLOAK_UPSTREAM=localhost:8081 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-localhost:8080}" \
+    EDGE_LISTEN=":$EDGE_PORT" KEYCLOAK_UPSTREAM=localhost:8082 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-localhost:8080}" \
       nohup caddy run --adapter caddyfile --config edge/Caddyfile > "$STATE_DIR/edge.log" 2>&1 &
     echo $! > "$STATE_DIR/edge.pid"
   fi
@@ -89,7 +89,7 @@ case "${1:-}" in
 ✅ Public URL: $url
    Keycloak issuer : $url/realms/finance
    API             : $url/api/v1/...
-   Admin Console   : KHÔNG public — vẫn chỉ ở http://localhost:8081/admin
+   Admin Console   : KHÔNG public — vẫn chỉ ở http://localhost:8082/admin
 
 Bước tiếp theo:
   1. Backend : Ctrl+C rồi 'make run' lại (Makefile tự lấy issuer mới từ deploy/.env)
@@ -103,10 +103,10 @@ MSG
     command -v docker >/dev/null && docker_stop
     write_url ""
     recreate_keycloak
-    echo "✅ Đã tắt tunnel. Keycloak quay về http://10.0.2.2:8081 — restart backend và chạy 'make tunnel-off' bên mobile."
+    echo "✅ Đã tắt tunnel. Keycloak quay về http://10.0.2.2:8082 — restart backend và chạy 'make tunnel-off' bên mobile."
     ;;
   url)
-    u=$(current_url); echo "${u:-(chưa bật tunnel — đang dùng http://10.0.2.2:8081)}"
+    u=$(current_url); echo "${u:-(chưa bật tunnel — đang dùng http://10.0.2.2:8082)}"
     ;;
   *)
     echo "Dùng: $0 up|down|url" >&2; exit 2 ;;

@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: finance
       POSTGRES_PASSWORD: finance
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # Tạo database `keycloak` riêng. CHỈ chạy khi volume còn trống -> `make reset` hoặc `make kc-db`.
@@ -59,17 +59,17 @@ services:
       # QUAN TRỌNG: issuer nằm trong token — đổi hostname là mọi token đang có mất hiệu lực.
       # Mặc định: địa chỉ Android emulator thấy host. `make tunnel` ghi KC_PUBLIC_URL (HTTPS của Cloudflare
       # Tunnel) vào deploy/.env và recreate container — cả emulator, simulator lẫn máy thật dùng chung.
-      KC_HOSTNAME: ${KC_PUBLIC_URL:-http://10.0.2.2:8081}
+      KC_HOSTNAME: ${KC_PUBLIC_URL:-http://10.0.2.2:8082}
       # Đứng sau Caddy/Cloudflare: tin X-Forwarded-* để lấy đúng scheme và IP client.
       KC_PROXY_HEADERS: xforwarded
-      # Cho phép backend chạy trên host gọi backchannel qua localhost:8081 mà không lệch hostname.
+      # Cho phép backend chạy trên host gọi backchannel qua localhost:8082 mà không lệch hostname.
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       # 10.0.2.2 chỉ routable TỪ TRONG emulator. Không có dòng này thì Admin Console mở
       # trên máy Mac sẽ bị redirect sang 10.0.2.2 và treo. Admin dùng hostname localhost riêng.
-      KC_HOSTNAME_ADMIN: http://localhost:8081
+      KC_HOSTNAME_ADMIN: http://localhost:8082
       KC_HEALTH_ENABLED: "true"
     ports:
-      - "8081:8080"     # console + OIDC endpoints  http://localhost:8081
+      - "8082:8080"     # console + OIDC endpoints  http://localhost:8082
     volumes:
       - ./keycloak/realm-finance.json:/opt/keycloak/data/import/realm-finance.json:ro
     depends_on:
