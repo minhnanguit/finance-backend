@@ -5,7 +5,7 @@ spring:
     virtual:
       enabled: true
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/finance}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/finance}
     username: ${DB_USER:finance}
     password: ${DB_PASSWORD:finance}
   jpa:
@@ -85,8 +85,8 @@ app:
     # Keycloak là IdP duy nhất. App này chỉ verify token, không issue token.
     # issuer-uri là giá trị nằm TRONG token; ở local nó là địa chỉ emulator thấy được,
     # còn process này fetch key qua jwk-set-uri trên localhost. Hai giá trị cố ý khác nhau.
-    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://10.0.2.2:8081/realms/finance}
-    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/finance/protocol/openid-connect/certs}
+    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://10.0.2.2:8082/realms/finance}
+    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8082/realms/finance/protocol/openid-connect/certs}
     audience: ${KEYCLOAK_AUDIENCE:finance-api}
   identity:
     subject-cache-ttl: 10m
