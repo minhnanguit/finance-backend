@@ -2,6 +2,7 @@ package com.uit.finance.modules.ledger.application.service.category;
 
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.ANN;
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.BOB;
+import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.NOW;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
@@ -39,7 +40,8 @@ class SeedDefaultCategoriesServiceTest {
         id -> {
           throw new AssertionError();
         },
-        () -> false);
+        () -> false,
+        NOW);
     store.update(ANN, food);
 
     service.seed(ANN);

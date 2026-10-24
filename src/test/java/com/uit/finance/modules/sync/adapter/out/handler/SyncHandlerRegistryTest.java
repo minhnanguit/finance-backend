@@ -75,7 +75,7 @@ class SyncHandlerRegistryTest {
   void unknownEntity() {
     SyncHandlerRegistry registry = new SyncHandlerRegistry(List.of(handler("account")));
 
-    assertThat(registry.supports("budget")).isFalse();
-    assertThat(registry.current(ANN, "budget", UUID.randomUUID())).isEmpty();
+    assertThat(registry.supports("recurring")).isFalse();
+    assertThat(registry.current(ANN, "recurring", UUID.randomUUID())).isEmpty();
   }
 }
