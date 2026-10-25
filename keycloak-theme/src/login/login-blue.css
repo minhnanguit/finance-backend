@@ -1,0 +1,769 @@
+/* Final blue-fintech login direction. Loaded after the legacy theme stylesheet. */
+.finance-auth-shell.finance-login-page {
+    --login-primary: #1677c8;
+    --login-deep: #07558f;
+    --login-navy: #12344d;
+    --login-aqua: #79dce8;
+    --login-soft-aqua: #c9f2f5;
+    --login-muted: #4d6473;
+    position: relative;
+    display: flex;
+    min-height: 100dvh;
+    padding: 0;
+    justify-content: flex-end;
+    flex-direction: column;
+    overflow: hidden;
+    background: linear-gradient(145deg, #f5fcfd 0%, #eaf8fc 48%, #ddf3f8 100%);
+}
+
+.finance-login-page .finance-login-hero {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 40dvh;
+    min-height: 250px;
+    max-height: 340px;
+    overflow: hidden;
+}
+
+.finance-login-page .finance-organic--left {
+    top: -72px;
+    left: -84px;
+    width: 250px;
+    height: 250px;
+    background: #f5fcfd;
+    opacity: 0.92;
+}
+
+.finance-login-page .finance-organic--right {
+    top: 42px;
+    right: -64px;
+    width: 245px;
+    height: 230px;
+    background: var(--login-soft-aqua);
+    opacity: 0.72;
+}
+
+.finance-login-page .finance-login-brand {
+    top: clamp(30px, 5dvh, 48px);
+    gap: 9px;
+    color: var(--login-navy);
+    font-size: clamp(1.35rem, 6vw, 1.65rem);
+    font-weight: 780;
+    letter-spacing: -0.03em;
+}
+
+.finance-login-page .finance-login-brand-mark {
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #2b9fe8, #79dce8);
+    color: #fff;
+    box-shadow: 0 8px 22px rgb(22 119 200 / 22%);
+}
+
+.finance-login-page .finance-login-illustration {
+    left: 50%;
+    right: auto;
+    bottom: 10px;
+    width: min(68vw, 285px);
+    max-height: 205px;
+    object-fit: contain;
+    opacity: 1;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 14px 20px rgb(7 85 143 / 16%));
+}
+
+.finance-login-page .finance-hero-feature,
+.finance-register-page .finance-hero-feature {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 88%);
+    background: linear-gradient(145deg, rgb(255 255 255 / 88%), rgb(201 242 245 / 72%));
+    color: #1677c8;
+    box-shadow: 0 18px 38px rgb(7 85 143 / 16%), inset 0 1px 0 rgb(255 255 255 / 92%);
+    backdrop-filter: blur(14px);
+    transform: translateX(-50%) rotate(-4deg);
+}
+
+.finance-login-page .finance-hero-feature {
+    bottom: 58px;
+    width: 104px;
+    height: 88px;
+    border-radius: 26px;
+}
+
+.finance-register-page .finance-hero-feature {
+    bottom: 34px;
+    width: 88px;
+    height: 74px;
+    border-radius: 22px;
+}
+
+.finance-login-page .finance-hero-feature > svg,
+.finance-register-page .finance-hero-feature > svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.7;
+}
+
+.finance-register-page .finance-hero-feature > svg {
+    width: 40px;
+    height: 40px;
+}
+
+.finance-hero-feature-coin {
+    position: absolute;
+    right: -12px;
+    bottom: -10px;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #79dce8, #1677c8);
+    color: #fff;
+    box-shadow: 0 8px 18px rgb(7 85 143 / 24%);
+}
+
+.finance-hero-feature-coin svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.4;
+}
+
+.finance-login-page .finance-hero-icon {
+    position: absolute;
+    z-index: 3;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 78%);
+    border-radius: 13px;
+    background: rgb(255 255 255 / 70%);
+    color: var(--login-primary);
+    box-shadow: 0 10px 24px rgb(7 85 143 / 12%);
+    backdrop-filter: blur(10px);
+}
+
+.finance-login-page .finance-hero-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.finance-login-page .finance-hero-icon--coins {
+    bottom: 42px;
+    left: 38px;
+}
+
+.finance-login-page .finance-hero-icon--growth {
+    right: 35px;
+    bottom: 90px;
+}
+
+.finance-login-page .finance-auth-card {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    width: min(calc(100% - 12px), 430px);
+    height: 62dvh;
+    min-height: 500px;
+    max-height: 650px;
+    margin: 0 auto;
+    padding: 28px 24px 24px;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    background: #fff;
+    box-shadow: 0 -12px 34px rgb(18 52 77 / 8%);
+}
+
+.finance-login-page .finance-security-note,
+.finance-register-page .finance-security-note {
+    display: none;
+}
+
+.finance-login-page .finance-card-topbar,
+.finance-login-page .finance-hero-mark,
+.finance-login-page .finance-watermark {
+    display: none;
+}
+
+.finance-login-page .finance-auth-header {
+    margin: 0 0 22px;
+    text-align: center;
+}
+
+.finance-login-page .finance-auth-header h1 {
+    color: var(--login-navy);
+    font-size: clamp(1.35rem, 5.8vw, 1.6rem);
+    font-weight: 720;
+    letter-spacing: -0.025em;
+}
+
+.finance-login-page .finance-auth-header p {
+    display: none;
+}
+
+.finance-login-page .finance-auth-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.finance-login-page #kc-form-login {
+    display: grid;
+    gap: 16px;
+}
+
+.finance-login-page #kc-form-login .finance-field > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.finance-login-page .finance-input {
+    min-height: 56px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border: 1.5px solid #a9dce5;
+    border-radius: 15px;
+    background: #fff;
+    color: var(--login-navy);
+    font-size: 0.9375rem;
+    font-weight: 520;
+    box-shadow: 0 4px 14px rgb(7 85 143 / 7%);
+}
+
+.finance-login-page .finance-input::placeholder {
+    color: #8298a5;
+}
+
+.finance-login-page .finance-input:hover,
+.finance-login-page .finance-input:focus {
+    border-color: var(--login-primary);
+    box-shadow: 0 0 0 4px rgb(121 220 232 / 22%), 0 6px 16px rgb(7 85 143 / 8%);
+}
+
+.finance-login-page .finance-input-icon,
+.finance-login-page .finance-password-toggle {
+    color: var(--login-primary);
+}
+
+.finance-login-page .finance-input-icon {
+    left: 17px;
+}
+
+.finance-login-page .finance-input--with-icon {
+    padding-left: 50px;
+}
+
+.finance-login-page .finance-password .finance-input {
+    padding-right: 58px;
+}
+
+.finance-login-page .finance-form-options {
+    min-height: 44px;
+    color: var(--login-muted);
+    font-size: 0.8125rem;
+}
+
+.finance-login-page .finance-check {
+    min-height: 44px;
+    color: var(--login-muted);
+}
+
+.finance-login-page .finance-check input {
+    width: 19px;
+    height: 19px;
+    accent-color: var(--login-primary);
+}
+
+.finance-login-page .finance-form-options a {
+    color: var(--login-deep);
+    font-weight: 700;
+}
+
+.finance-login-page .finance-button {
+    min-height: 56px;
+    margin-top: 2px;
+    border: 1px solid rgb(121 220 232 / 65%);
+    border-radius: 15px;
+    background: linear-gradient(100deg, #1677c8, #07558f);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 750;
+    box-shadow: 0 10px 24px rgb(7 85 143 / 22%);
+}
+
+.finance-login-page .finance-button:hover:not(:disabled) {
+    background: linear-gradient(100deg, #2b9fe8, #07558f);
+    box-shadow: 0 12px 28px rgb(7 85 143 / 28%);
+}
+
+.finance-login-page .finance-social {
+    display: flex;
+    margin-top: 24px;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    color: var(--login-muted);
+    font-size: 0.8125rem;
+}
+
+.finance-login-page .finance-social > span {
+    color: var(--login-muted);
+}
+
+.finance-login-page .finance-social-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.finance-login-page .finance-social-buttons > a,
+.finance-login-page .finance-social-buttons > button {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #d7e9ee;
+    border-radius: 14px;
+    background: #fff;
+    color: #101619;
+    box-shadow: 0 6px 16px rgb(7 85 143 / 10%);
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.finance-login-page .finance-social-buttons > a:hover {
+    border-color: var(--login-aqua);
+    box-shadow: 0 9px 20px rgb(7 85 143 / 16%);
+    transform: translateY(-2px);
+}
+
+.finance-login-page .finance-social-buttons > button:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.finance-login-page .finance-social-buttons svg {
+    width: 22px;
+    height: 22px;
+}
+
+.finance-login-page .finance-auth-footer {
+    margin-top: auto;
+    padding-top: 22px;
+    border-top: 1px solid #dcecf0;
+    color: var(--login-muted);
+    font-size: 0.8125rem;
+}
+
+.finance-login-page .finance-auth-footer a,
+.finance-login-page a {
+    color: var(--login-deep);
+}
+
+/* Recovery, verify, info and error pages share the same visual shell as Login. */
+.finance-secondary-page .finance-auth-card {
+    min-height: 430px;
+}
+
+.finance-secondary-page .finance-auth-header {
+    margin-bottom: 22px;
+}
+
+.finance-secondary-page .finance-auth-content,
+.finance-secondary-page form {
+    display: grid;
+    gap: 16px;
+}
+
+.finance-secondary-page .finance-field,
+.finance-secondary-page .pf-v5-c-form__group {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+}
+
+.finance-secondary-page input[type="text"],
+.finance-secondary-page input[type="email"],
+.finance-secondary-page input[type="password"] {
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 16px;
+    border: 1.5px solid #a9dce5;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--login-navy);
+    box-shadow: 0 4px 14px rgb(7 85 143 / 7%);
+}
+
+.finance-secondary-page input[type="text"]:focus,
+.finance-secondary-page input[type="email"]:focus,
+.finance-secondary-page input[type="password"]:focus {
+    border-color: var(--login-primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgb(121 220 232 / 22%);
+}
+
+.finance-secondary-page #kc-form-buttons {
+    display: grid;
+    margin-top: 2px;
+}
+
+.finance-secondary-page #kc-form-buttons input[type="submit"],
+.finance-secondary-page #kc-form-buttons button[type="submit"],
+.finance-secondary-page .finance-button {
+    width: 100%;
+    min-height: 54px;
+    border: 1px solid rgb(121 220 232 / 65%);
+    border-radius: 15px;
+    background: linear-gradient(100deg, #1677c8, #07558f);
+    color: #fff;
+    font-weight: 750;
+    box-shadow: 0 10px 24px rgb(7 85 143 / 22%);
+}
+
+.finance-secondary-page #kc-form-options,
+.finance-secondary-page .instruction,
+.finance-secondary-page #kc-info-message,
+.finance-secondary-page #kc-error-message {
+    color: var(--login-muted);
+    font-size: 0.875rem;
+    line-height: 1.65;
+}
+
+.finance-secondary-page #kc-form-options a {
+    font-weight: 700;
+}
+
+@media (max-height: 700px) {
+    .finance-login-page .finance-login-hero {
+        min-height: 220px;
+    }
+
+    .finance-login-page .finance-auth-card {
+        min-height: 480px;
+        padding-top: 22px;
+    }
+}
+
+@media (min-width: 481px) {
+    .finance-auth-shell.finance-login-page {
+        padding-top: min(38dvh, 320px);
+        align-items: flex-start;
+    }
+
+    .finance-login-page .finance-login-hero {
+        left: 50%;
+        width: 430px;
+        transform: translateX(-50%);
+    }
+
+    .finance-login-page .finance-auth-card {
+        height: min(62dvh, 650px);
+        border-radius: 28px;
+    }
+}
+
+/* Register uses the same blue/aqua visual language with a taller form sheet. */
+.finance-auth-shell.finance-register-page {
+    --register-primary: #1677c8;
+    --register-deep: #07558f;
+    --register-navy: #12344d;
+    --register-aqua: #79dce8;
+    --register-muted: #4d6473;
+    position: relative;
+    display: flex;
+    min-height: 100dvh;
+    padding: 0;
+    justify-content: flex-end;
+    flex-direction: column;
+    overflow: hidden;
+    background: linear-gradient(145deg, #f5fcfd 0%, #eaf8fc 48%, #ddf3f8 100%);
+}
+
+.finance-register-page .finance-login-hero {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 31dvh;
+    min-height: 210px;
+    max-height: 285px;
+    overflow: hidden;
+}
+
+.finance-register-page .finance-login-brand {
+    top: clamp(28px, 4.5dvh, 42px);
+    gap: 9px;
+    color: var(--register-navy);
+    font-size: clamp(1.3rem, 5.8vw, 1.6rem);
+    font-weight: 780;
+    letter-spacing: -0.03em;
+}
+
+.finance-register-page .finance-login-brand-mark {
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #2b9fe8, #79dce8);
+    color: #fff;
+    box-shadow: 0 8px 22px rgb(22 119 200 / 22%);
+}
+
+.finance-register-page .finance-organic--left {
+    top: -82px;
+    left: -82px;
+    width: 235px;
+    height: 235px;
+    background: #f5fcfd;
+}
+
+.finance-register-page .finance-organic--right {
+    top: 35px;
+    right: -58px;
+    width: 220px;
+    height: 205px;
+    background: #c9f2f5;
+    opacity: 0.72;
+}
+
+.finance-register-page .finance-login-illustration {
+    right: 50%;
+    bottom: -58px;
+    width: min(64vw, 265px);
+    max-height: 185px;
+    object-fit: contain;
+    opacity: 1;
+    transform: translateX(50%) rotate(-3deg);
+    filter: drop-shadow(0 12px 18px rgb(7 85 143 / 15%));
+}
+
+.finance-register-page .finance-hero-icon {
+    position: absolute;
+    z-index: 3;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 78%);
+    border-radius: 12px;
+    background: rgb(255 255 255 / 72%);
+    color: var(--register-primary);
+    box-shadow: 0 9px 20px rgb(7 85 143 / 12%);
+}
+
+.finance-register-page .finance-hero-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.finance-register-page .finance-hero-icon--coins {
+    bottom: 30px;
+    left: 38px;
+}
+
+.finance-register-page .finance-hero-icon--growth {
+    right: 36px;
+    bottom: 66px;
+}
+
+.finance-register-page .finance-auth-card {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    width: min(calc(100% - 12px), 430px);
+    height: 72dvh;
+    min-height: 590px;
+    max-height: 720px;
+    margin: 0 auto;
+    padding: 25px 24px 22px;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    background: #fff;
+    box-shadow: 0 -12px 34px rgb(18 52 77 / 8%);
+}
+
+.finance-register-page .finance-auth-header {
+    margin: 0 0 18px;
+    text-align: center;
+}
+
+.finance-register-page .finance-auth-header h1 {
+    color: var(--register-navy);
+    font-size: clamp(1.35rem, 5.8vw, 1.6rem);
+    font-weight: 720;
+    letter-spacing: -0.025em;
+}
+
+.finance-register-page #kc-register-form {
+    display: grid;
+    gap: 12px;
+}
+
+.finance-register-page #kc-register-form .pf-v5-c-form__group,
+.finance-register-page #kc-register-form .finance-field {
+    gap: 5px;
+    margin: 0;
+}
+
+.finance-register-page #kc-register-form label {
+    color: var(--register-navy);
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.finance-register-page input[type="text"],
+.finance-register-page input[type="email"],
+.finance-register-page input[type="password"] {
+    min-height: 52px;
+    padding: 13px 44px 13px 16px;
+    border: 1.5px solid #a9dce5;
+    border-radius: 14px;
+    background: #fff;
+    color: var(--register-navy);
+    font-size: 0.9rem;
+    font-weight: 520;
+    box-shadow: 0 4px 14px rgb(7 85 143 / 7%);
+}
+
+.finance-register-page input[type="text"]:focus,
+.finance-register-page input[type="email"]:focus,
+.finance-register-page input[type="password"]:focus {
+    border-color: var(--register-primary);
+    box-shadow: 0 0 0 4px rgb(121 220 232 / 22%);
+}
+
+.finance-register-page button[aria-label*="password" i],
+.finance-register-page .pf-v5-c-button.pf-m-control {
+    color: var(--register-primary);
+}
+
+.finance-register-page input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--register-primary);
+}
+
+.finance-register-page #kc-form-buttons input[type="submit"],
+.finance-register-page #kc-form-buttons button[type="submit"] {
+    width: 100%;
+    min-height: 54px;
+    border: 1px solid rgb(121 220 232 / 65%);
+    border-radius: 15px;
+    background: linear-gradient(100deg, #1677c8, #07558f);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 750;
+    box-shadow: 0 10px 24px rgb(7 85 143 / 22%);
+}
+
+.finance-register-page #kc-form-buttons input[type="submit"]:disabled {
+    opacity: 0.55;
+}
+
+.finance-register-page #kc-form-options {
+    display: none;
+}
+
+.finance-register-social {
+    display: flex;
+    margin-top: 22px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--register-muted);
+    font-size: 0.8rem;
+}
+
+.finance-register-social-buttons {
+    display: flex;
+    gap: 16px;
+}
+
+.finance-register-social-buttons button {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #d7e9ee;
+    border-radius: 14px;
+    background: #fff;
+    color: #101619;
+    box-shadow: 0 6px 16px rgb(7 85 143 / 10%);
+    opacity: 1;
+}
+
+.finance-register-social-buttons svg {
+    width: 21px;
+    height: 21px;
+}
+
+.finance-register-login-link {
+    display: flex;
+    min-height: 48px;
+    margin-top: auto;
+    padding-top: 18px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-top: 1px solid #dcecf0;
+    color: var(--register-muted);
+    font-size: 0.8125rem;
+}
+
+.finance-register-login-link a,
+.finance-register-page a {
+    color: var(--register-deep);
+    font-weight: 700;
+}
+
+@media (max-height: 760px) {
+    .finance-register-page .finance-login-hero {
+        min-height: 185px;
+    }
+
+    .finance-register-page .finance-auth-card {
+        min-height: 560px;
+        padding-top: 21px;
+    }
+}
+
+@media (min-width: 481px) {
+    .finance-auth-shell.finance-register-page {
+        padding-top: min(29dvh, 275px);
+        align-items: flex-start;
+    }
+
+    .finance-register-page .finance-login-hero {
+        left: 50%;
+        width: 430px;
+        transform: translateX(-50%);
+    }
+
+    .finance-register-page .finance-auth-card {
+        height: min(72dvh, 720px);
+        border-radius: 28px;
+    }
+}

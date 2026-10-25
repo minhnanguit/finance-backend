@@ -72,6 +72,7 @@ services:
       - "8082:8080"     # console + OIDC endpoints  http://localhost:8082
     volumes:
       - ./keycloak/realm-finance.json:/opt/keycloak/data/import/realm-finance.json:ro
+      - ../keycloak-theme/dist_keycloak/keycloak-theme-for-kc-all-other-versions.jar:/opt/keycloak/providers/finance-theme.jar:ro
     depends_on:
       postgres:
         condition: service_healthy
