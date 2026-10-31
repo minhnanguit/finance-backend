@@ -23,7 +23,7 @@ Ledger đã chừa sẵn chỗ cho ngân sách: index `transactions (user_id, ca
 | G7 | Tháng tính theo `occurred_on` (ADR-005 D5) | Không lệch múi giờ |
 | G8 | `category_id`, `currency`, `start_month` **bất biến**. Muốn đổi thì xoá rồi tạo mới | Ý nghĩa bản ghi không đổi ngầm |
 | G9 | Màu so bằng **số nguyên**: vàng khi `spent ≥ amount − amount/5`, đỏ khi `spent ≥ amount` | Không tràn số, không sai số làm tròn |
-| G10 | `%` chỉ để hiển thị và sắp xếp: `spent.toDouble() / amount * 100`, làm tròn xuống, tối đa "999%". Tổng theo tiền tệ cộng **bão hoà** (như số dư, ADR-005 §5) | `spent * 100` có thể tràn `long` |
+| G10 | `%` chỉ để hiển thị và sắp xếp: **chia nguyên** `spent * 100 / amount` khi `spent ≤ Long.MAX_VALUE / 100`, ngoài ra mới dùng `spent.toDouble() / amount * 100`; làm tròn xuống, tối đa "999%". Tổng theo tiền tệ cộng **bão hoà** (như số dư, ADR-005 §5) | Số thực sai số làm tròn: `2_300_000.0 / 2_000_000 * 100` = 114,999… → 114% thay vì 115% (sửa 2026-10-31). `spent * 100` chỉ có thể tràn `long` ở vùng đã kẹp 999% |
 | G11 | "Mỗi ngày còn được chi" = `còn lại / số ngày còn lại tính cả hôm nay`, làm tròn xuống. Chỉ hiện ở tháng hiện tại khi còn lại > 0 | Tháng cũ không còn ý nghĩa |
 | G12 | "Hôm nay" là một luồng tự cập nhật: phát lại lúc 00:00 giờ máy và khi app quay lại foreground | Màn mở qua nửa đêm không kẹt số hôm trước |
 | G13 | Danh mục **đã archive**: ngân sách cũ vẫn hiện, gắn nhãn "Đã lưu trữ". Form không cho chọn để tạo mới. **Server không chặn** | Archive chỉ là ẩn (ADR-005 §3, sửa 2026-10-12) |
