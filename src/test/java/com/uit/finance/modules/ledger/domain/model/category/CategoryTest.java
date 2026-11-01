@@ -8,6 +8,7 @@ import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.assertR
 import static com.uit.finance.modules.ledger.domain.model.LedgerFixtures.category;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.uit.finance.modules.ledger.domain.event.CategoryChanged;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.InvalidParentException;
@@ -110,7 +111,9 @@ class CategoryTest {
     Category drinks = category(ANN, CategoryKind.EXPENSE);
 
     assertRejected(
-        () -> drinks.revise(CategoryKind.EXPENSE, details("Đồ uống", food), only(food), () -> true),
+        () ->
+            drinks.revise(
+                CategoryKind.EXPENSE, details("Đồ uống", food), only(food), () -> true, NOW),
         InvalidParentException.CODE);
   }
 
@@ -126,10 +129,42 @@ class CategoryTest {
             NO_PARENT,
             () -> {
               throw new AssertionError("children must not be queried");
-            });
+            },
+            NOW);
 
     assertThat(changed).isTrue();
     assertThat(food.getDetails().color().value()).isEqualTo("#F97316");
+    assertThat(food.pullDomainEvents()).as("đổi tên không phát CategoryChanged").isEmpty();
+  }
+
+  @Test
+  @DisplayName("đổi cha phát CategoryChanged chỉ mang id (ADR-007 G14)")
+  void reparentRecordsCategoryChanged() {
+    Category food = category(ANN, CategoryKind.EXPENSE);
+    Category drinks = category(ANN, CategoryKind.EXPENSE);
+
+    drinks.revise(CategoryKind.EXPENSE, details("Đồ uống", food), only(food), () -> false, NOW);
+
+    assertThat(drinks.pullDomainEvents())
+        .singleElement()
+        .isInstanceOfSatisfying(
+            CategoryChanged.class,
+            event -> {
+              assertThat(event.categoryId()).isEqualTo(drinks.getId().value());
+              assertThat(event.userId()).isEqualTo(ANN.value());
+              assertThat(event.occurredAt()).isEqualTo(NOW);
+            });
+  }
+
+  @Test
+  @DisplayName("xoá phát CategoryChanged một lần; xoá lại không phát nữa")
+  void deleteRecordsCategoryChangedOnce() {
+    Category food = category(ANN, CategoryKind.EXPENSE);
+
+    food.delete(NOW, () -> false);
+    food.delete(NOW, () -> false);
+
+    assertThat(food.pullDomainEvents()).singleElement().isInstanceOf(CategoryChanged.class);
   }
 
   @Test
@@ -138,7 +173,7 @@ class CategoryTest {
     Category food = category(ANN, CategoryKind.EXPENSE);
 
     assertRejected(
-        () -> food.revise(CategoryKind.INCOME, food.getDetails(), NO_PARENT, () -> false),
+        () -> food.revise(CategoryKind.INCOME, food.getDetails(), NO_PARENT, () -> false, NOW),
         KindImmutableException.CODE);
   }
 
@@ -152,7 +187,7 @@ class CategoryTest {
     assertThat(fresh.delete(NOW, () -> false)).isTrue();
     assertThat(fresh.delete(NOW, () -> true)).isFalse();
     assertRejected(
-        () -> fresh.revise(CategoryKind.EXPENSE, fresh.getDetails(), NO_PARENT, () -> false),
+        () -> fresh.revise(CategoryKind.EXPENSE, fresh.getDetails(), NO_PARENT, () -> false, NOW),
         EntityDeletedException.CODE);
   }
 
