@@ -19,7 +19,7 @@ Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` đ�
 |---|---|
 | `make` | Liệt kê mọi target (mặc định = `make help`) |
 | `make up` | Postgres 17 + Redis 7 + RabbitMQ 4 + Keycloak 26 + Mailpit, chờ tới khi healthy — bắt buộc trước `make run` / `make itest` |
-| `make run` | App ở `http://localhost:8080` |
+| `make run` | App ở `http://localhost:18473` |
 | `make health` | Gọi `/actuator/health` xem app sống chưa |
 | `make down` | Tắt hạ tầng, giữ dữ liệu |
 | `make reset` | Tắt hạ tầng và xoá sạch volume — DB về trắng. **Hỏi user trước** |

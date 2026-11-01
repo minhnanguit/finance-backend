@@ -39,7 +39,7 @@ native_running() { [[ -f $STATE_DIR/$1.pid ]] && kill -0 "$(cat "$STATE_DIR/$1.p
 native_start() {
   mkdir -p "$STATE_DIR"
   if ! native_running edge; then
-    EDGE_LISTEN=":$EDGE_PORT" KEYCLOAK_UPSTREAM=localhost:8082 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-localhost:8080}" \
+    EDGE_LISTEN=":$EDGE_PORT" KEYCLOAK_UPSTREAM=localhost:8082 BACKEND_UPSTREAM="${BACKEND_UPSTREAM:-localhost:18473}" \
       nohup caddy run --adapter caddyfile --config edge/Caddyfile > "$STATE_DIR/edge.log" 2>&1 &
     echo $! > "$STATE_DIR/edge.pid"
   fi

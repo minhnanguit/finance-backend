@@ -10,7 +10,7 @@ Every routine command is a `make` target — run `make` with no argument to list
 
 ```bash
 make up      # postgres, redis, rabbitmq — waits until all three are healthy
-make run     # http://localhost:8080 (Ctrl+C to stop)
+make run     # http://localhost:18473 (Ctrl+C to stop)
 ```
 
 - Health: `make health` · Modulith: `GET /actuator/modulith`
@@ -21,7 +21,7 @@ make run     # http://localhost:8080 (Ctrl+C to stop)
 Try it:
 
 ```bash
-curl -s -i localhost:8080/api/v1/me     # no token → 401 problem+json
+curl -s -i localhost:18473/api/v1/me     # no token → 401 problem+json
 ```
 
 Sign-in, sign-up and token refresh happen at Keycloak (`make kc`, ADR-004); this API only validates the token.
