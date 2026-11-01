@@ -63,7 +63,7 @@ Filter đăng ký **sau** `AuthorizationFilter` để scope được theo user �
 make up
 make run
 
-curl -s -i localhost:8080/api/v1/me          # không token → 401, code auth.unauthenticated
+curl -s -i localhost:18473/api/v1/me          # không token → 401, code auth.unauthenticated
 curl -s localhost:8081/realms/finance/.well-known/openid-configuration | jq .issuer   # phải là http://10.0.2.2:8081/realms/finance
 ```
 

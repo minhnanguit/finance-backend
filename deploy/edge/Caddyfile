@@ -25,7 +25,7 @@
 
 	@api path /api/* /actuator/health /actuator/health/*
 	handle @api {
-		reverse_proxy {$BACKEND_UPSTREAM:host.docker.internal:8080}
+		reverse_proxy {$BACKEND_UPSTREAM:host.docker.internal:18473}
 	}
 
 	handle {

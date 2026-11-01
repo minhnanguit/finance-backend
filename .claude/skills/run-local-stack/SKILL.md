@@ -23,7 +23,7 @@ Trên máy dev này: **mở Docker Desktop trước**, nếu không `make itest`
 ## 2. Chạy app
 
 ```bash
-make run     # http://localhost:8080
+make run     # http://localhost:18473
 ```
 
 | Endpoint | Dùng để |

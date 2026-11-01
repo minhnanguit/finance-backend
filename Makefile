@@ -4,7 +4,7 @@
 
 COMPOSE  := docker compose -f deploy/docker-compose.yml
 GRADLE   := ./gradlew
-BASE_URL ?= http://localhost:8080
+BASE_URL ?= http://localhost:18473
 
 # Khi `make tunnel` đang bật, deploy/.env chứa KC_PUBLIC_URL (HTTPS của Cloudflare Tunnel). Backend phải
 # validate đúng issuer đó. Chỉ export khi có giá trị: biến rỗng sẽ đè mất default trong application.yml.
@@ -40,7 +40,7 @@ logs: ## Xem log realtime của hạ tầng (Ctrl+C để thoát)
 
 # ---------- Chạy ứng dụng ----------
 
-run: ## Chạy Spring Boot ở cổng 8080 — chiếm terminal, Ctrl+C để dừng
+run: ## Chạy Spring Boot ở cổng 18473 — chiếm terminal, Ctrl+C để dừng
 	$(GRADLE) bootRun
 
 health: ## Gọi /actuator/health để biết backend đã sống chưa

@@ -104,7 +104,7 @@ services:
     profiles: [tunnel]
     environment:
       # Backend chạy trên host bằng `make run`, không nằm trong compose.
-      BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-host.docker.internal:8080}
+      BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-host.docker.internal:18473}
     extra_hosts:
       - "host.docker.internal:host-gateway" # Linux; Docker Desktop / OrbStack đã có sẵn
     volumes:
