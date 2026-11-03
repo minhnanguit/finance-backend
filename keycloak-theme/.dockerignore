@@ -1,0 +1,7 @@
+node_modules
+dist
+dist_keycloak
+storybook-static
+playwright-report
+test-results
+.git
