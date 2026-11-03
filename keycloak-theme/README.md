@@ -42,17 +42,22 @@ dist_keycloak/keycloak-theme-for-kc-all-other-versions.jar
 
 Để test với Keycloak dev, build theme rồi mount file trên vào `/opt/keycloak/providers/finance-theme.jar`, sau đó đặt Login theme của realm thành `finance`. Không commit các thư mục output `dist`, `dist_keycloak` hoặc `storybook-static`.
 
-Baseline ảnh của Playwright nằm trong `e2e/theme.spec.ts-snapshots`. Khi thay đổi giao diện có chủ đích, xem lại ảnh rồi chạy `npm run test:e2e -- --update-snapshots`.
+Baseline ảnh của Playwright nằm trong `e2e/theme.spec.ts-snapshots`. CI chỉ so sánh và không tự cập nhật baseline. Khi thay đổi giao diện có chủ đích, tạo và xem lại baseline Linux bằng:
+
+```bash
+docker build -f e2e/Dockerfile -t finance-keycloak-theme-e2e .
+docker run --rm -v "$PWD/e2e/theme.spec.ts-snapshots:/theme/e2e/theme.spec.ts-snapshots" finance-keycloak-theme-e2e
+```
 
 ## Image production
 
-Sau khi build JAR, tạo image Keycloak đã tối ưu bằng:
+Dockerfile tự build JAR từ source rồi tạo image Keycloak đã tối ưu:
 
 ```bash
-docker build -f keycloak-theme/Dockerfile -t finance-keycloak:26.7.4-theme0.1.0 keycloak-theme
+docker build -f keycloak-theme/Dockerfile -t finance-keycloak:26.7.4-theme keycloak-theme
 ```
 
-Dockerfile chép JAR vào `/opt/keycloak/providers` trước khi chạy `kc.sh build`.
+`make up` thực hiện bước build image này và chạy cấu hình realm lặp-an-toàn, nên hoạt động trên checkout sạch và không yêu cầu xoá volume Keycloak hiện có.
 
 ## Token thiết kế
 

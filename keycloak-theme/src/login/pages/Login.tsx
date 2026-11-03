@@ -23,6 +23,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
         { key: "facebook", label: "Facebook", provider: findProvider("facebook"), icon: <FacebookIcon /> },
         { key: "apple", label: "Apple", provider: findProvider("apple"), icon: <AppleIcon /> }
     ];
+    const availableSocialButtons = socialButtons.filter(button => button.provider !== undefined);
 
     return (
         <Template
@@ -38,24 +39,18 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                     {msg("noAccount")} <a href={url.registrationUrl}>{msg("doRegister")}</a>
                 </span>
             }
-            socialProvidersNode={
+            socialProvidersNode={availableSocialButtons.length > 0 ? (
                 <div className="finance-social">
                     <span>{msg("identity-provider-login-label")}</span>
                     <div className="finance-social-buttons">
-                        {socialButtons.map(({ key, label, provider, icon }) =>
-                            provider ? (
-                                <a key={key} href={provider.loginUrl} aria-label={`${msgStr("doLogIn")} ${label}`} title={label}>
-                                    {icon}
-                                </a>
-                            ) : (
-                                <button key={key} type="button" aria-label={label} title={`${label} (coming soon)`} disabled>
-                                    {icon}
-                                </button>
-                            )
-                        )}
+                        {availableSocialButtons.map(({ key, label, provider, icon }) => (
+                            <a key={key} href={provider!.loginUrl} aria-label={`${msgStr("doLogIn")} ${label}`} title={label}>
+                                {icon}
+                            </a>
+                        ))}
                     </div>
                 </div>
-            }
+            ) : undefined}
         >
             {realm.password && (
                 <form id="kc-form-login" action={url.loginAction} method="post" onSubmit={() => setIsSubmitting(true)}>
@@ -71,7 +66,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                                       : msg("email")
                             }
                             defaultValue={login.username ?? ""}
-                            placeholder="Enter your username or email"
+                            placeholder={msgStr("usernameOrEmail")}
                             autoComplete="username"
                             autoFocus
                             error={error}
@@ -83,7 +78,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                         name="password"
                         label={msg("password")}
                         autoComplete="current-password"
-                        placeholder="Enter your password"
+                        placeholder={msgStr("password")}
                         error={usernameHidden ? error : undefined}
                         showLabel={msgStr("showPassword")}
                         hideLabel={msgStr("hidePassword")}

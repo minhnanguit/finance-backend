@@ -24,8 +24,7 @@ jobs:
           cache-dependency-path: keycloak-theme/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run build-storybook
-      - run: npm run test:e2e -- --update-snapshots
+      - run: npm run test:e2e
       - run: npm run build-keycloak-theme
       - uses: actions/upload-artifact@v4
         if: always()

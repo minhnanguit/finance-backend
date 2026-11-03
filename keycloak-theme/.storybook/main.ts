@@ -7,6 +7,9 @@ const config: StorybookConfig = {
         name: "@storybook/react-vite",
         options: {}
     },
-    staticDirs: ["../public"]
+    staticDirs: [
+        "../public",
+        { from: "../public", to: "/keycloakify-dev-resources/login/dist" }
+    ]
 };
 export default config;

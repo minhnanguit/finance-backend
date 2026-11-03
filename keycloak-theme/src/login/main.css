@@ -264,8 +264,9 @@ input[aria-invalid="true"] {
 }
 .finance-field-error {
     display: block;
-    color: var(--finance-error);
+    color: #a8241b;
     font-size: 0.8125rem;
+    font-weight: 600;
 }
 
 .finance-password {

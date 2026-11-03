@@ -193,9 +193,21 @@
     display: none;
 }
 
-.finance-login-page .finance-card-topbar,
 .finance-login-page .finance-hero-mark,
 .finance-login-page .finance-watermark {
+    display: none;
+}
+
+.finance-login-page .finance-card-topbar,
+.finance-register-page .finance-card-topbar {
+    display: flex;
+    min-height: 32px;
+    margin: -8px 0 4px;
+    justify-content: flex-end;
+}
+
+.finance-login-page .finance-card-topbar .finance-brand,
+.finance-register-page .finance-card-topbar .finance-brand {
     display: none;
 }
 
@@ -249,6 +261,11 @@
 
 .finance-login-page .finance-input::placeholder {
     color: #8298a5;
+}
+
+.finance-login-page .finance-field-error {
+    color: #a8241b;
+    font-weight: 600;
 }
 
 .finance-login-page .finance-input:hover,
