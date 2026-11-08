@@ -50,7 +50,9 @@ class ArchitectureRulesTest {
   };
 
   /** Modules whose data belongs to one user. Add a module here when it gets user-owned tables. */
-  private static final String[] USER_SCOPED_OUT_PORTS = {"..modules.ledger.application.port.out.."};
+  private static final String[] USER_SCOPED_OUT_PORTS = {
+    "..modules.ledger.application.port.out..", "..modules.budget.application.port.out.."
+  };
 
   @ArchTest
   static final ArchRule rule1_domainAndKernelAreFrameworkFree =
@@ -81,6 +83,8 @@ class ArchitectureRulesTest {
       classes()
           .that()
           .resideInAPackage(APPLICATION)
+          .and()
+          .doNotHaveSimpleName("package-info") // @NamedInterface of port.in.reference (ADR-007 §7)
           .should()
           .onlyDependOnClassesThat()
           .resideInAnyPackage(

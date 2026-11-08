@@ -487,7 +487,8 @@ class SyncApiIT {
             ann.user(),
             upsertExpense(UUID.randomUUID(), ann.account(), ann.food(), 0),
             upsertExpense(good, ann.account(), ann.food(), 1_000),
-            op("budget", UUID.randomUUID(), "UPSERT", Map.of()));
+            // Entity chưa có handler (budget đã có từ ADR-007, nên dùng một tên tương lai).
+            op("recurring", UUID.randomUUID(), "UPSERT", Map.of()));
 
     assertThat(outcome(results.get(0))).isEqualTo("REJECTED");
     assertThat(outcome(results.get(1))).isEqualTo("APPLIED");

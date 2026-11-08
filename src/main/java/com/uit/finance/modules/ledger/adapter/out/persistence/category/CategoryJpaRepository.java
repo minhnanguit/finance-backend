@@ -14,6 +14,8 @@ interface CategoryJpaRepository extends Repository<CategoryJpaEntity, UUID> {
 
   Optional<CategoryJpaEntity> findByIdAndUserId(UUID id, UUID userId);
 
+  List<CategoryJpaEntity> findByUserIdAndIdIn(UUID userId, Collection<UUID> ids);
+
   @Query("select c.id from CategoryJpaEntity c where c.userId = :userId and c.id in :ids")
   List<UUID> findExistingIds(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);
 
