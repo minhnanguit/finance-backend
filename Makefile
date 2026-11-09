@@ -24,7 +24,8 @@ help: ## Liệt kê mọi lệnh make của repo này
 # ---------- Hạ tầng (Docker) ----------
 
 up: ## Bật Postgres + Redis + RabbitMQ + Keycloak + Mailpit, chờ tới khi healthy
-	$(COMPOSE) up -d --wait
+	$(COMPOSE) up -d --build --wait postgres redis rabbitmq keycloak mailpit
+	$(COMPOSE) run --rm keycloak-config
 
 down: ## Tắt hạ tầng nhưng GIỮ nguyên dữ liệu trong volume
 	$(COMPOSE) down
