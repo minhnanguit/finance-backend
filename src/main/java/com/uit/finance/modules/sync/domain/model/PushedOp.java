@@ -25,6 +25,11 @@ public record PushedOp(
     data = data == null ? null : Collections.unmodifiableMap(new HashMap<>(data));
   }
 
+  /** Cùng op nhưng là {@code UPSERT}: dùng sau khi đã chắc {@code CREATE} vào id chưa có. */
+  public PushedOp asUpsert() {
+    return new PushedOp(opId, entity, entityId, OpAction.UPSERT, data);
+  }
+
   /** Không in {@code data}: có thể chứa số tiền, ghi chú (ADR-006 B8). */
   @Override
   public String toString() {

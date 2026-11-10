@@ -82,7 +82,7 @@ nếu op.action == CREATE:
 
 - **Kiểm rồi ghi an toàn** vì cả hai nằm trong transaction đã khoá user: 2 `CREATE` cùng id của cùng user chạy lần lượt, request sau thấy bản request trước đã commit.
 - `CREATE` khi id chưa có với owner **không bao giờ là update**: `current` rỗng nghĩa là owner không có bản nào; handler chỉ còn đường tạo mới hoặc từ chối ownership.
-- `SyncAction` (shared) thêm `CREATE`, nhưng **handler không bao giờ nhận `CREATE`**: sync đổi sang `UPSERT` sau khi kiểm. Handler cũ không phải sửa.
+- Chỉ `OpAction` (domain sync) có `CREATE`; `SyncAction` (shared, SPI) **giữ nguyên**: sync đổi `CREATE` sang `UPSERT` sau khi kiểm, handler không bao giờ nhận `CREATE`. Handler cũ không phải sửa.
 - Client cũ không gửi `CREATE`. Server cũ (< 2.3.0) nhận `CREATE` sẽ trả 400 vì enum sai: mobile 2.3.0 chỉ chạy với backend ≥ 2.3.0, như mọi lần pin contract.
 
 ### 4. Bảng
@@ -187,7 +187,7 @@ sync: CREATE                                     chung, trong ApplyOpService
 
 | Thành phần | Chốt |
 |---|---|
-| `modules.sync` | `CREATE` ở `ApplyOpService` (§3). `OpAction` (domain sync) và `SyncAction` (shared) thêm `CREATE`. `SyncWebMapper` đang dùng `OpAction.valueOf(...)`: phải có `CREATE` **cùng lúc** contract 2.3.0 lên server, nếu không op `CREATE` gây lỗi 500 thay vì kết quả từng op |
+| `modules.sync` | `CREATE` ở `ApplyOpService` (§3). `OpAction` (domain sync) thêm `CREATE`, `SyncAction` (SPI) giữ nguyên. `SyncWebMapper` đang dùng `OpAction.valueOf(...)`: phải có `CREATE` **cùng lúc** contract 2.3.0 lên server, nếu không op `CREATE` gây lỗi 500 thay vì kết quả từng op |
 | Ledger | `LedgerReferenceQuery.findAccount(UserId, UUID)` → `AccountRef(id, currency, archived, deleted)`. Không thấy / của user khác → rỗng |
 | `package-info` | `@ApplicationModule(displayName = "Recurring", allowedDependencies = {"modules.ledger::reference"})` |
 | Domain | Aggregate `Recurring` (`create` / `rehydrate`, `revise(changes, expectedRevision, today)`, `end(date, today)`, `skipUntil(date, today)`, `delete`), value object `RecurrenceRevision`, `RecurrenceRule`, `RecurringName`. Luật RS11/RS12 nằm trong aggregate, nhận `today` từ service (Clock) |

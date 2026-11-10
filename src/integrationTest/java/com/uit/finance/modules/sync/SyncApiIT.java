@@ -488,7 +488,7 @@ class SyncApiIT {
             upsertExpense(UUID.randomUUID(), ann.account(), ann.food(), 0),
             upsertExpense(good, ann.account(), ann.food(), 1_000),
             // Entity chưa có handler (budget đã có từ ADR-007, nên dùng một tên tương lai).
-            op("recurring", UUID.randomUUID(), "UPSERT", Map.of()));
+            op("goal", UUID.randomUUID(), "UPSERT", Map.of()));
 
     assertThat(outcome(results.get(0))).isEqualTo("REJECTED");
     assertThat(outcome(results.get(1))).isEqualTo("APPLIED");
@@ -524,6 +524,92 @@ class SyncApiIT {
 
     assertThat(changeSeqs(ann.user().id()))
         .isEqualTo(LongStream.rangeClosed(1, 16 + 1 + 20).boxed().toList());
+  }
+
+  // ---- CREATE (ADR-008 §3) -------------------------------------------------------------------
+
+  private static Map<String, Object> createExpense(
+      UUID id, UUID account, UUID category, long amount) {
+    return op("transaction", id, "CREATE", expenseData(account, category, amount));
+  }
+
+  @Test
+  @DisplayName(
+      "CREATE id mới → APPLIED; CREATE lại cùng id → CONFLICT sync.already_exists, giữ bản cũ")
+  void createIsInsertIfAbsent() {
+    Ledger ann = ledger();
+    UUID tx = UUID.randomUUID();
+
+    JsonNode first = pushOk(ann.user(), createExpense(tx, ann.account(), ann.food(), 1_000)).get(0);
+    JsonNode second =
+        pushOk(ann.user(), createExpense(tx, ann.account(), ann.food(), 9_999)).get(0);
+
+    assertThat(outcome(first)).isEqualTo("APPLIED");
+    assertThat(outcome(second)).isEqualTo("CONFLICT");
+    assertThat(code(second)).isEqualTo("sync.already_exists");
+    assertThat(second.get("current").get("data").get("amountMinor").asLong()).isEqualTo(1_000);
+  }
+
+  @Test
+  @DisplayName("CREATE vào id đã xoá → CONFLICT + tombstone, không hồi sinh")
+  void createNeverRevivesATombstone() {
+    Ledger ann = ledger();
+    UUID tx = UUID.randomUUID();
+    pushOk(ann.user(), upsertExpense(tx, ann.account(), ann.food(), 1_000));
+    pushOk(ann.user(), delete("transaction", tx));
+
+    JsonNode result =
+        pushOk(ann.user(), createExpense(tx, ann.account(), ann.food(), 1_000)).get(0);
+
+    assertThat(outcome(result)).isEqualTo("CONFLICT");
+    assertThat(code(result)).isEqualTo("sync.already_exists");
+    assertThat(result.get("current").get("deleted").asBoolean()).isTrue();
+  }
+
+  @Test
+  @DisplayName("A CREATE với id giao dịch của B → bị từ chối như UPSERT, dữ liệu B không đổi")
+  void createWithAnotherUsersIdLeaksNothing() {
+    Ledger bob = ledger();
+    UUID tx = UUID.randomUUID();
+    pushOk(bob.user(), upsertExpense(tx, bob.account(), bob.food(), 5_000));
+    Ledger ann = ledger();
+
+    JsonNode result = pushOk(ann.user(), createExpense(tx, ann.account(), ann.food(), 1)).get(0);
+
+    assertThat(outcome(result)).isEqualTo("REJECTED");
+    assertThat(code(result)).isNotEqualTo("sync.already_exists");
+    assertThat(result.get("current").isNull()).isTrue();
+    assertThat(
+            jdbc.sql("SELECT amount_minor FROM transactions WHERE id = :id")
+                .param("id", tx)
+                .query(Long.class)
+                .single())
+        .isEqualTo(5_000L);
+  }
+
+  @Test
+  @DisplayName("2 máy CREATE cùng id song song → đúng 1 APPLIED, còn lại CONFLICT, chỉ 1 dòng")
+  void parallelCreatesOfTheSameIdApplyOnce() throws Exception {
+    Ledger ann = ledger();
+    UUID tx = UUID.randomUUID();
+    List<List<Map<String, Object>>> batches = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      batches.add(List.of(createExpense(tx, ann.account(), ann.food(), 1_000 + i)));
+    }
+
+    List<JsonNode> results = pushInParallel(ann.user(), batches);
+
+    assertThat(results).extracting(SyncApiIT::outcome).containsOnlyOnce("APPLIED");
+    assertThat(results)
+        .filteredOn(r -> !"APPLIED".equals(outcome(r)))
+        .extracting(SyncApiIT::code)
+        .containsOnly("sync.already_exists");
+    assertThat(
+            jdbc.sql("SELECT COUNT(*) FROM transactions WHERE id = :id")
+                .param("id", tx)
+                .query(Long.class)
+                .single())
+        .isEqualTo(1L);
   }
 
   /** Chạy các batch push của cùng một user song song (2 máy cùng sync), trả kết quả của mọi op. */

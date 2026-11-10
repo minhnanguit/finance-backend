@@ -4,6 +4,7 @@ import com.uit.finance.modules.sync.application.port.out.OpLogPort;
 import com.uit.finance.modules.sync.application.port.out.SyncHandlersPort;
 import com.uit.finance.modules.sync.application.port.out.SyncStatePort;
 import com.uit.finance.modules.sync.domain.model.DeviceId;
+import com.uit.finance.modules.sync.domain.model.OpAction;
 import com.uit.finance.modules.sync.domain.model.OpLogEntry;
 import com.uit.finance.modules.sync.domain.model.OpOutcome;
 import com.uit.finance.modules.sync.domain.model.OpResult;
@@ -54,7 +55,7 @@ class ApplyOpService {
       throw new OpNotAppliedException(OpVerdict.unknownEntity());
     }
 
-    OpVerdict verdict = handlers.apply(owner, op);
+    OpVerdict verdict = handlers.apply(owner, toHandlerOp(owner, op));
     if (verdict.outcome() != OpOutcome.APPLIED) {
       throw new OpNotAppliedException(verdict);
     }
@@ -63,6 +64,22 @@ class ApplyOpService {
       throw new OpNotAppliedException(OpVerdict.duplicate());
     }
     return result(owner, op, verdict);
+  }
+
+  /**
+   * {@code CREATE} (ADR-008 §3): id đã có với user, còn sống hay tombstone, thì không ghi. Kiểm và
+   * ghi nằm trong cùng transaction đã khoá user nên 2 {@code CREATE} cùng id chạy lần lượt. Id chưa
+   * có với user thì đi đường {@code UPSERT}: handler chỉ còn tạo mới hoặc từ chối id của người
+   * khác, không bao giờ là sửa.
+   */
+  private PushedOp toHandlerOp(UserId owner, PushedOp op) {
+    if (op.action() != OpAction.CREATE) {
+      return op;
+    }
+    if (handlers.current(owner, op.entity(), op.entityId()).isPresent()) {
+      throw new OpNotAppliedException(OpVerdict.alreadyExists());
+    }
+    return op.asUpsert();
   }
 
   private OpResult result(UserId owner, PushedOp op, OpVerdict verdict) {

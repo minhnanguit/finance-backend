@@ -2,6 +2,7 @@ package com.uit.finance.modules.sync.adapter.out.handler;
 
 import com.uit.finance.modules.sync.application.port.out.SyncHandlersPort;
 import com.uit.finance.modules.sync.domain.model.ChangeRecord;
+import com.uit.finance.modules.sync.domain.model.OpAction;
 import com.uit.finance.modules.sync.domain.model.OpOutcome;
 import com.uit.finance.modules.sync.domain.model.OpVerdict;
 import com.uit.finance.modules.sync.domain.model.PushedOp;
@@ -49,6 +50,10 @@ class SyncHandlerRegistry implements SyncHandlersPort {
 
   @Override
   public OpVerdict apply(UserId owner, PushedOp op) {
+    if (op.action() == OpAction.CREATE) {
+      throw new IllegalArgumentException(
+          "CREATE must be resolved by sync before reaching a handler");
+    }
     SyncOpResult result =
         handler(op.entity())
             .apply(
