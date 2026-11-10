@@ -5,6 +5,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -93,6 +96,40 @@ public final class SyncData {
       return flag;
     }
     throw SyncDataException.invalid(field);
+  }
+
+  /** Số nguyên có thể vắng hoặc {@code null}. */
+  public @Nullable Integer optionalInt(String field) {
+    return raw(field) == null ? null : requiredInt(field);
+  }
+
+  /**
+   * Mảng JSON các object, mỗi phần tử đọc tiếp bằng {@link #read}. Vắng hoặc {@code null} trả
+   * {@code null}; không phải mảng object là {@code sync.invalid_field}.
+   */
+  public @Nullable List<Map<String, Object>> objects(String field) {
+    Object value = raw(field);
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof List<?> list)) {
+      throw SyncDataException.invalid(field);
+    }
+    List<Map<String, Object>> result = new ArrayList<>(list.size());
+    for (Object item : list) {
+      if (!(item instanceof Map<?, ?> map)) {
+        throw SyncDataException.invalid(field);
+      }
+      Map<String, Object> entry = new HashMap<>();
+      for (Map.Entry<?, ?> e : map.entrySet()) {
+        if (!(e.getKey() instanceof String key)) {
+          throw SyncDataException.invalid(field);
+        }
+        entry.put(key, e.getValue());
+      }
+      result.add(entry);
+    }
+    return result;
   }
 
   /** Ngày dạng ISO {@code 2026-10-05}. */

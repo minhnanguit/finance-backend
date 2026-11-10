@@ -151,12 +151,13 @@ Mỗi vi phạm ném `DomainException` có mã ổn định; `RecurringSyncHandl
 | Ví hoặc danh mục chưa tới **hoặc** của user khác (B2) | `RETRY` | `recurring.reference_pending` | BUSINESS_RULE |
 | Danh mục khác loại `type` | `REJECTED` | `recurring.invalid_category` | VALIDATION |
 | Ví khác `currency` | `REJECTED` | `recurring.currency_mismatch` | VALIDATION |
+| Ví của phiên bản thêm/sửa đã xoá | `REJECTED` | `recurring.invalid_account` | VALIDATION |
 | Field ngoài giới hạn §7, tổ hợp lịch sai, `effective_from` trùng hoặc không tăng dần, ngày ngoài cửa sổ RS11/RS12. Kèm tên field, **không** kèm giá trị (B8) | `REJECTED` | `recurring.invalid_field` | VALIDATION |
 | Quá 200 khoản còn hiệu lực | `REJECTED` | `recurring.limit_reached` | BUSINESS_RULE |
 | Field lạ / thiếu / sai kiểu trong `data` | `REJECTED` | `sync.unknown_field` / `sync.invalid_field` | — |
 | UPSERT id của user khác | `REJECTED` | `recurring.not_found` | NOT_FOUND |
 | Sửa khoản đã xoá (S4) | `CONFLICT` + tombstone | `recurring.deleted` | CONFLICT |
-| 2 lần ghi đụng optimistic lock | `RETRY` | `recurring.concurrent_update` | — |
+| Lỗi đồng thời của DB (không xảy ra khi đã khoá user, giữ cho chắc) | `RETRY` | `recurring.concurrent_update` | — |
 
 Gửi lại đúng dữ liệu đang có với `revision` cũ hơn 1 (client mất response rồi gửi op mới cùng nội dung) vẫn là `revision_conflict`; client lấy `current`, thấy giống thì không báo user (mobile, §8).
 
@@ -193,7 +194,7 @@ sync: CREATE                                     chung, trong ApplyOpService
 | Domain | Aggregate `Recurring` (`create` / `rehydrate`, `revise(changes, expectedRevision, today)`, `end(date, today)`, `skipUntil(date, today)`, `delete`), value object `RecurrenceRevision`, `RecurrenceRule`, `RecurringName`. Luật RS11/RS12 nằm trong aggregate, nhận `today` từ service (Clock) |
 | `port/in` | `CreateRecurringUseCase` · `UpdateRecurringUseCase` · `DeleteRecurringUseCase` · `RecurringChangeFeedUseCase` |
 | `port/out` | `LoadRecurringPort` · `SaveRecurringPort` · `RecurringCountPort` · `RecurringWriteLockPort`. **Thêm `..modules.recurring.application.port.out..` vào `USER_SCOPED_OUT_PORTS`** (luật #10) |
-| `adapter/out/persistence` | 2 JPA entity, mapper viết tay, ghi timeline cùng aggregate, `change_seq` qua `ChangeSequencer` |
+| `adapter/out/persistence` | JDBC (`NamedParameterJdbcTemplate`, như `JdbcOpLog`): ghi khoản + ghi lại toàn bộ timeline (≤ 50 dòng) trong transaction đã khoá user, `change_seq` qua `ChangeSequencer`. Không cần optimistic lock vì mọi lần ghi của user chạy lần lượt (RS14) |
 | `adapter/in/sync` | `RecurringSyncHandler` + `RecurringSyncMapper` (`SyncData`) + bảng dịch §6 |
 | Consumer / event | **Không có** ở v1. Tham chiếu kiểm lúc ghi (RS13); ví/danh mục bị chặn do app xử lý (R13) |
 

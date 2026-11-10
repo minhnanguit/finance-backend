@@ -51,7 +51,9 @@ class ArchitectureRulesTest {
 
   /** Modules whose data belongs to one user. Add a module here when it gets user-owned tables. */
   private static final String[] USER_SCOPED_OUT_PORTS = {
-    "..modules.ledger.application.port.out..", "..modules.budget.application.port.out.."
+    "..modules.ledger.application.port.out..",
+    "..modules.budget.application.port.out..",
+    "..modules.recurring.application.port.out.."
   };
 
   @ArchTest
