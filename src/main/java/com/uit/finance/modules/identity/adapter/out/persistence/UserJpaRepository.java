@@ -1,6 +1,7 @@
 package com.uit.finance.modules.identity.adapter.out.persistence;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,23 @@ import org.springframework.data.repository.query.Param;
 interface UserJpaRepository extends JpaRepository<UserJpaEntity, UUID> {
 
   Optional<UserJpaEntity> findByExternalSubject(String externalSubject);
+
+  /**
+   * {@code SKIP LOCKED}: instance khác đang hoàn tất tài khoản nào thì instance này bỏ qua tài
+   * khoản đó thay vì đứng chờ. Đi theo partial index {@code ix_users_pending_deletion} (V8).
+   */
+  @Query(
+      value =
+          """
+          SELECT * FROM users
+          WHERE status = 'DELETING' AND deletion_requested_at < :requestedBefore
+          ORDER BY deletion_requested_at
+          LIMIT :limit
+          FOR UPDATE SKIP LOCKED
+          """,
+      nativeQuery = true)
+  List<UserJpaEntity> lockPendingDeletions(
+      @Param("requestedBefore") Instant requestedBefore, @Param("limit") int limit);
 
   /**
    * {@code ON CONFLICT DO NOTHING}: hai concurrent request đầu tiên cho cùng một {@code sub} đều

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.uit.finance.modules.identity.application.port.in.ProvisionUserUseCase.ProvisionUserCommand;
 import com.uit.finance.modules.identity.domain.event.UserRegistered;
+import com.uit.finance.modules.identity.domain.exception.UserDeletedException;
 import com.uit.finance.modules.identity.domain.exception.UserProvisioningFailedException;
 import com.uit.finance.modules.identity.domain.model.Email;
 import com.uit.finance.modules.identity.domain.model.ExternalSubject;
@@ -96,6 +97,20 @@ class ProvisionUserServiceTest {
     assertThat(resolved).isEqualTo(winner.getId());
     assertThat(users.byId).hasSize(1);
     // Bên thua không được publish lại event mà bên thắng đã publish.
+    assertThat(events.published).isEmpty();
+  }
+
+  @Test
+  @DisplayName("sub của tài khoản đã xoá: không tạo lại, không ghi lại email/tên từ token còn hạn")
+  void deletedAccountIsNotRevived() {
+    UserId id = service.provision(command("ann@example.com", "Ann"));
+    users.byId.put(id.value(), users.byId.get(id.value()).requestDeletion(NOW));
+    events.published.clear();
+
+    assertThatThrownBy(() -> service.provision(command("ann@example.com", "Ann")))
+        .isInstanceOf(UserDeletedException.class);
+    assertThat(users.byId).hasSize(1);
+    assertThat(users.byId.get(id.value()).getEmail().value()).endsWith("@erased.invalid");
     assertThat(events.published).isEmpty();
   }
 
