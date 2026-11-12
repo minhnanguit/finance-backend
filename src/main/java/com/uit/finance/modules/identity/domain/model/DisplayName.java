@@ -8,6 +8,9 @@ public record DisplayName(String value) {
     Ensure.lengthBetween(value, 1, 100, "displayName");
   }
 
+  /** Tên thay thế cho tài khoản đã xoá (ADR-008 A4). */
+  public static final DisplayName ERASED = new DisplayName("Deleted user");
+
   public static DisplayName of(String raw) {
     return new DisplayName(Ensure.notBlank(raw, "displayName").trim());
   }
