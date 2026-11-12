@@ -13,17 +13,22 @@ import com.uit.finance.modules.ledger.application.port.in.category.DeleteCategor
 import com.uit.finance.modules.ledger.application.port.in.category.SeedDefaultCategoriesUseCase;
 import com.uit.finance.modules.ledger.application.port.in.category.UpdateCategoryUseCase;
 import com.uit.finance.modules.ledger.application.port.in.category.UpdateCategoryUseCase.UpdateCategoryCommand;
+import com.uit.finance.modules.ledger.application.port.in.maintenance.TombstoneMaintenanceUseCase;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerEntity;
 import com.uit.finance.shared.kernel.UserId;
 import com.uit.finance.shared.sync.SyncAction;
 import com.uit.finance.shared.sync.SyncChange;
 import com.uit.finance.shared.sync.SyncHandler;
 import com.uit.finance.shared.sync.SyncOp;
 import com.uit.finance.shared.sync.SyncOpResult;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /** Op của entity {@code category}. Lần sync đầu tiên tạo bộ danh mục mặc định (ADR-002 §5). */
@@ -36,6 +41,7 @@ class CategorySyncHandler implements SyncHandler {
   private final ArchiveCategoryUseCase archive;
   private final DeleteCategoryUseCase delete;
   private final SeedDefaultCategoriesUseCase seed;
+  private final TombstoneMaintenanceUseCase tombstones;
 
   CategorySyncHandler(
       CategoryChangeFeedUseCase feed,
@@ -43,13 +49,15 @@ class CategorySyncHandler implements SyncHandler {
       UpdateCategoryUseCase update,
       ArchiveCategoryUseCase archive,
       DeleteCategoryUseCase delete,
-      SeedDefaultCategoriesUseCase seed) {
+      SeedDefaultCategoriesUseCase seed,
+      TombstoneMaintenanceUseCase tombstones) {
     this.feed = feed;
     this.create = create;
     this.update = update;
     this.archive = archive;
     this.delete = delete;
     this.seed = seed;
+    this.tombstones = tombstones;
   }
 
   @Override
@@ -99,5 +107,16 @@ class CategorySyncHandler implements SyncHandler {
   @Override
   public void initialize(UserId owner) {
     seed.seed(owner);
+  }
+
+  @Override
+  public List<UserId> ownersWithTombstonesBefore(
+      Instant cutoff, @Nullable UserId afterOwner, int limit) {
+    return tombstones.ownersWithTombstones(LedgerEntity.CATEGORY, cutoff, afterOwner, limit);
+  }
+
+  @Override
+  public OptionalLong purgeTombstones(UserId owner, Instant cutoff) {
+    return tombstones.purgeTombstones(LedgerEntity.CATEGORY, owner, cutoff);
   }
 }
