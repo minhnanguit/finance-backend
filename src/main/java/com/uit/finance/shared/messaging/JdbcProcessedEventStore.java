@@ -21,6 +21,20 @@ class JdbcProcessedEventStore implements ProcessedEventStore {
     this.jdbc = jdbc;
   }
 
+  /** {@code ctid} + {@code LIMIT}: Postgres has no {@code DELETE ... LIMIT}. */
+  @Override
+  public int deleteProcessedBefore(Instant cutoff, int batchSize) {
+    return jdbc.sql(
+            """
+            DELETE FROM processed_events
+            WHERE ctid IN (SELECT ctid FROM processed_events WHERE processed_at < :cutoff
+                           LIMIT :batchSize)
+            """)
+        .param("cutoff", java.sql.Timestamp.from(cutoff))
+        .param("batchSize", batchSize)
+        .update();
+  }
+
   @Override
   public boolean markProcessed(UUID eventId, String consumer, Instant at) {
     return jdbc.sql(INSERT)
