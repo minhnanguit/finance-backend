@@ -1,6 +1,7 @@
 package com.uit.finance.modules.budget.adapter.out.persistence;
 
 import com.uit.finance.modules.budget.application.port.out.BudgetTombstonePort;
+import com.uit.finance.modules.budget.application.port.out.PurgeBudgetsPort;
 import com.uit.finance.shared.kernel.UserId;
 import java.sql.Types;
 import java.time.Instant;
@@ -15,16 +16,16 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Xoá thật tombstone ngân sách quá hạn (ADR-008 T1). Đi theo partial index {@code
- * ix_budgets_tombstones}. Không bảng nào tham chiếu {@code budgets}, nên xoá không cần {@code NOT
- * EXISTS}.
+ * Xoá thật dòng {@code budgets} (ADR-008): tombstone quá hạn (T1, đi theo partial index {@code
+ * ix_budgets_tombstones}) và toàn bộ ngân sách của tài khoản đã xoá (A7). Không bảng nào tham chiếu
+ * {@code budgets}, nên xoá không cần {@code NOT EXISTS}.
  */
 @Component
-class BudgetTombstoneAdapter implements BudgetTombstonePort {
+class BudgetMaintenanceAdapter implements BudgetTombstonePort, PurgeBudgetsPort {
 
   private final NamedParameterJdbcTemplate jdbc;
 
-  BudgetTombstoneAdapter(NamedParameterJdbcTemplate jdbc) {
+  BudgetMaintenanceAdapter(NamedParameterJdbcTemplate jdbc) {
     this.jdbc = jdbc;
   }
 
@@ -69,6 +70,13 @@ class BudgetTombstoneAdapter implements BudgetTombstonePort {
                 .addValue("cutoff", utc(cutoff), Types.TIMESTAMP_WITH_TIMEZONE),
             Long.class);
     return maxSeq == null ? OptionalLong.empty() : OptionalLong.of(maxSeq);
+  }
+
+  @Override
+  public long deleteEverythingOf(UserId owner) {
+    return jdbc.update(
+        "DELETE FROM budgets WHERE user_id = :owner",
+        new MapSqlParameterSource().addValue("owner", owner.value(), Types.OTHER));
   }
 
   private static OffsetDateTime utc(Instant value) {

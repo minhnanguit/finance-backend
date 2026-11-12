@@ -39,7 +39,8 @@ import tools.jackson.databind.JsonNode;
 /**
  * Xoá tài khoản end-to-end (ADR-008): HTTP thật với token có chữ ký thật → job xoá tài khoản
  * Keycloak (hàng đợi {@code users.idp_removed_at}) và job hoàn tất xoá → outbox → RabbitMQ →
- * consumer của ledger và sync. Chỉ thay Keycloak Admin API bằng fake ghi lại {@code sub} bị xoá.
+ * consumer của ledger, budget và sync. Chỉ thay Keycloak Admin API bằng fake ghi lại {@code sub} bị
+ * xoá.
  *
  * <p>Thời gian chờ và cache trạng thái đặt về 0 để test không phải đợi 10 phút; luật "thời gian chờ
  * >= cache" vẫn được kiểm khi khởi động context.
@@ -111,7 +112,7 @@ class UserDeletionIT {
     return op;
   }
 
-  /** Một ví và một khoản chi, để có dữ liệu ở cả ledger lẫn sync_ops. */
+  /** Một ví, một khoản chi và một ngân sách, để có dữ liệu ở ledger, budget lẫn sync_ops. */
   private void writeSomeLedgerData(Account account) {
     JsonNode categories = pullAll(account.token());
     UUID food = null;
@@ -138,6 +139,11 @@ class UserDeletionIT {
     expense.put("currency", "VND");
     expense.put("categoryId", food.toString());
     expense.put("occurredOn", TODAY);
+    Map<String, Object> budget = new LinkedHashMap<>();
+    budget.put("categoryId", food.toString());
+    budget.put("currency", "VND");
+    budget.put("amountMinor", 2_000_000);
+    budget.put("startMonth", LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).toString());
     ResponseEntity<String> pushed =
         api.post(
             "/api/v1/sync/push",
@@ -147,10 +153,14 @@ class UserDeletionIT {
                 "ops",
                 List.of(
                     op("account", wallet, "UPSERT", walletData),
-                    op("transaction", UUID.randomUUID(), "UPSERT", expense))),
+                    op("transaction", UUID.randomUUID(), "UPSERT", expense),
+                    op("budget", UUID.randomUUID(), "UPSERT", budget))),
             UUID.randomUUID().toString(),
             account.token());
     assertThat(pushed.getStatusCode().value()).as(pushed.getBody()).isEqualTo(200);
+    api.json(pushed)
+        .get("results")
+        .forEach(result -> assertThat(result.get("outcome").asString()).isEqualTo("APPLIED"));
   }
 
   private long rowsOf(String table, UUID userId) {
@@ -205,7 +215,8 @@ class UserDeletionIT {
     writeSomeLedgerData(ann);
     writeSomeLedgerData(bob);
     assertThat(rowsOf("transactions", ann.id())).isEqualTo(1);
-    assertThat(rowsOf("sync_ops", ann.id())).isEqualTo(2);
+    assertThat(rowsOf("budgets", ann.id())).isEqualTo(1);
+    assertThat(rowsOf("sync_ops", ann.id())).isEqualTo(3);
 
     ResponseEntity<String> deleted = api.delete(ME, ann.token());
 
@@ -238,13 +249,19 @@ class UserDeletionIT {
               assertThat(statusOf(ann.id())).isEqualTo("DELETED");
               for (String table :
                   List.of(
-                      "accounts", "categories", "transactions", "sync_ops", "user_sync_state")) {
+                      "accounts",
+                      "categories",
+                      "transactions",
+                      "budgets",
+                      "sync_ops",
+                      "user_sync_state")) {
                 assertThat(rowsOf(table, ann.id())).as(table).isZero();
               }
             });
 
     // Người khác không bị ảnh hưởng.
     assertThat(rowsOf("transactions", bob.id())).isEqualTo(1);
+    assertThat(rowsOf("budgets", bob.id())).isEqualTo(1);
     assertThat(api.get(ME, bob.token()).getStatusCode().value()).isEqualTo(200);
     assertThat(keycloak.deleted).doesNotContain(ExternalSubject.of(bob.subject()));
   }

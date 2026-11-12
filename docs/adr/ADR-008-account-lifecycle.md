@@ -66,6 +66,7 @@ IdentityProviderRemovalJob (mỗi 15 giây, ngoài transaction) ──► Keyclo
 UserDeletionFinalizerJob (mỗi 1 phút, quá purge-delay)
            ──tx──► users: DELETED ──outbox──► identity.user.deleted
                                                ├─► ledger.user-deleted  → transactions → categories → accounts
+                                               ├─► budget.user-deleted  → budgets
                                                └─► sync.user-deleted    → sync_ops, user_sync_state
 ```
 
@@ -75,7 +76,7 @@ UserDeletionFinalizerJob (mỗi 1 phút, quá purge-delay)
   xoá Keycloak nằm chờ (không mất) tới khi cấu hình đúng.
 - `403 identity.user_deleted` do `ProblemAuthenticationEntryPoint` trả (exception `InactiveAccountException` của
   `shared.security`), nên mọi endpoint có token đều nhất quán mà không controller nào phải biết.
-- Port out mới của ledger (`PurgeLedgerPort`, `TombstonePort`) vẫn nhận `UserId` (luật #10). Dọn tombstone liệt kê owner
+- Port out mới của ledger (`PurgeLedgerPort`, `TombstonePort`) và budget (`PurgeBudgetsPort`, `BudgetTombstonePort`) vẫn nhận `UserId` (luật #10). Dọn tombstone liệt kê owner
   bằng keyset trên UUID theo **thứ tự không dấu của Postgres** (`SyncHandlerRegistry.POSTGRES_UUID_ORDER`) — `UUID.compareTo`
   của Java so có dấu, gộp danh sách theo thứ tự đó sẽ bỏ sót owner.
 - Contract: endpoint chỉ có response lỗi mang body thì openapi-generator khai `produces = application/problem+json` và

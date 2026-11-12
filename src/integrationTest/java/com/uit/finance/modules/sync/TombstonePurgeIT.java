@@ -144,6 +144,15 @@ class TombstonePurgeIT {
     return op("transaction", id, "UPSERT", data);
   }
 
+  private static Map<String, Object> budget(UUID id, UUID category) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("categoryId", category.toString());
+    data.put("currency", "VND");
+    data.put("amountMinor", 2_000_000);
+    data.put("startMonth", LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).toString());
+    return op("budget", id, "UPSERT", data);
+  }
+
   private static Map<String, Object> delete(String entity, UUID id) {
     return op(entity, id, "DELETE", null);
   }
@@ -281,5 +290,26 @@ class TombstonePurgeIT {
     assertThat(exists("transactions", annSpend)).isFalse();
     assertThat(exists("transactions", bobSpend)).isTrue();
     assertThat(purgedThrough(bob)).isZero();
+  }
+
+  @Test
+  @DisplayName("tombstone ngân sách quá hạn được dọn cùng job, mốc của cursor tính cả nó")
+  void budgetTombstonesArePurgedToo() {
+    User user = newUser();
+    UUID food = foodCategory(user);
+    UUID gone = UUID.randomUUID();
+    pushOk(user, budget(gone, food));
+    String offlineCursor = pullAll(user, null, 500).cursors().getLast();
+    pushOk(user, delete("budget", gone));
+    long tombstoneSeq = changeSeq("budgets", gone);
+    ageTombstone("budgets", gone);
+
+    runPurge();
+
+    assertThat(exists("budgets", gone)).isFalse();
+    assertThat(purgedThrough(user)).isEqualTo(tombstoneSeq);
+    assertThat(pull(user, offlineCursor, 100).getStatusCode().value()).isEqualTo(410);
+    // Đã dọn thì tạo lại ngân sách cho cùng danh mục vẫn được (không vướng unique index).
+    pushOk(user, budget(UUID.randomUUID(), food));
   }
 }
