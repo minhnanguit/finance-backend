@@ -152,7 +152,7 @@ Push 60/phút, pull 120/phút mỗi user. `RateLimitFilter` trong `shared.web`, 
 - Mọi lần ghi của cùng một user xếp hàng qua 1 row lock, giữ suốt transaction của từng op. Một người không ghi nhiều tới mức đó; ghi hàng loạt (import) phải chia batch.
 - Máy B archive ví trong lúc máy A (offline) ghi giao dịch mới vào ví đó: **chốt 2026-10-12, giao dịch của A được nhận** (`APPLIED`). Archive chỉ là ẩn khỏi danh sách chọn, không chặn ghi (ADR-005 §3); client tự không cho chọn ví/danh mục đã archive. Từ chối thì giao dịch bị xoá khỏi máy A — mất dữ liệu thật, tệ hơn nhiều so với một dòng nằm trong ví đã ẩn.
 - Last-write-wins có thể đè một sửa đổi offline cũ lên bản mới hơn. Đủ cho sổ cá nhân.
-- Tombstone sống mãi trong plan này. Dọn tombstone (và client có cursor cũ hơn mốc dọn phải pull lại từ đầu) thuộc plan #14.
+- Tombstone được dọn sau 90 ngày; cursor cũ hơn mốc dọn nhận `410 sync.cursor_expired` và client tải lại từ đầu sau khi push hết outbox (ADR-008 T1–T5, cập nhật 2026-11-07).
 - Ví chung (#18) sẽ cần luật conflict theo entity. Envelope kết quả từng op đã chừa chỗ.
 
 ## References

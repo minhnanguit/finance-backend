@@ -103,7 +103,7 @@ Rate limit dùng Redis có sẵn, 0 dependency mới. Redis chết → **cho qua
 - SQLCipher tăng kích thước app (~3–4 MB mỗi ABI) và chậm hơn SQLite thường vài %. CI macOS phải link SQLCipher cho iOS.
 - Rate limit fail-open: Redis chết thì tạm thời không có giới hạn tần suất.
 - Đăng xuất khi còn op chưa gửi mà user vẫn xác nhận → các op đó mất. Đó là lựa chọn có cảnh báo của user.
-- Chưa có: xoá tài khoản, PIN/biometric, che màn hình, chặn chụp màn hình (plan #14); certificate pinning (`AUTH-KEYCLOAK-PLAN.md` Phase 6B).
+- Xoá tài khoản, khoá app bằng xác thực của máy, che màn hình, chặn chụp màn hình, loại DB khỏi backup: ADR-008 (2026-11-07). Xoá tài khoản là ngoại lệ của B7: xoá file DB ngay. Chưa có: certificate pinning (`AUTH-KEYCLOAK-PLAN.md` Phase 6B).
 
 ## References
 
