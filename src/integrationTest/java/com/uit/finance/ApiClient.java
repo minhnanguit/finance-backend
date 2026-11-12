@@ -16,9 +16,13 @@ public final class ApiClient {
   private final JsonMapper json = JsonMapper.builder().build();
 
   public ApiClient(int port) {
+    // Accept giống app mobile (Ktor ContentNegotiation gửi `application/json` cho mọi request):
+    // endpoint
+    // nào chỉ `produces` problem+json sẽ lộ ra 406 ở IT thay vì trên máy thật.
     this.http =
         RestClient.builder()
             .baseUrl("http://localhost:" + port)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> {})
             .build();
   }
@@ -42,6 +46,14 @@ public final class ApiClient {
 
   public ResponseEntity<String> get(String path, String bearer) {
     RestClient.RequestHeadersSpec<?> spec = http.get().uri(path);
+    if (bearer != null) {
+      spec = spec.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer);
+    }
+    return spec.retrieve().toEntity(String.class);
+  }
+
+  public ResponseEntity<String> delete(String path, String bearer) {
+    RestClient.RequestHeadersSpec<?> spec = http.delete().uri(path);
     if (bearer != null) {
       spec = spec.header(HttpHeaders.AUTHORIZATION, "Bearer " + bearer);
     }
