@@ -100,6 +100,34 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "finance-backend",
+      "name": "Finance Backend (service account)",
+      "description": "Chi dung client credentials de goi Admin API xoa tai khoan (ADR-008). Khong co flow nao cho nguoi dung.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KC_FINANCE_BACKEND_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "access.token.lifespan": "300"
+      }
+    }
+  ],
+
+  "users": [
+    {
+      "username": "service-account-finance-backend",
+      "enabled": true,
+      "serviceAccountClientId": "finance-backend",
+      "clientRoles": {
+        "realm-management": ["manage-users"]
+      }
     }
   ]
 }

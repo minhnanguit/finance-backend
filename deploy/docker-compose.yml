@@ -68,6 +68,11 @@ services:
       # trên máy Mac sẽ bị redirect sang 10.0.2.2 và treo. Admin dùng hostname localhost riêng.
       KC_HOSTNAME_ADMIN: http://localhost:8082
       KC_HEALTH_ENABLED: "true"
+      # Secret của client finance-backend (service account xoá tài khoản, ADR-008). realm-finance.json đọc biến
+      # này lúc import; backend dùng cùng giá trị qua KEYCLOAK_ADMIN_CLIENT_SECRET. `make up` sinh giá trị ngẫu
+      # nhiên vào deploy/.env (compose tự đọc). Giá trị mặc định chỉ dùng khi gọi `docker compose` trực tiếp mà
+      # chưa qua `make up` — biết trước, đừng bật tunnel với nó.
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:-local-dev-finance-backend-secret}
     ports:
       - "8082:8080"     # console + OIDC endpoints  http://localhost:8082
     volumes:
