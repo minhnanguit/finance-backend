@@ -1,5 +1,6 @@
 package com.uit.finance.modules.ledger.domain.model.category;
 
+import com.uit.finance.modules.ledger.domain.event.CategoryChanged;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.InvalidParentException;
@@ -11,6 +12,7 @@ import com.uit.finance.shared.kernel.AggregateRoot;
 import com.uit.finance.shared.kernel.Ensure;
 import com.uit.finance.shared.kernel.UserId;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -84,13 +86,15 @@ public final class Category extends AggregateRoot implements Referenceable {
 
   /**
    * Áp dữ liệu mới. Client gửi kèm {@code kind} để server phát hiện ý định đổi loại, thay vì lặng
-   * lẽ bỏ qua.
+   * lẽ bỏ qua. Đổi cha thì ghi {@link CategoryChanged}: ngân sách chỉ đặt cho danh mục gốc (ADR-007
+   * G14).
    */
   public boolean revise(
       CategoryKind requestedKind,
       CategoryDetails next,
       Function<CategoryId, Category> parents,
-      BooleanSupplier hasActiveChildren) {
+      BooleanSupplier hasActiveChildren,
+      Instant now) {
     requireNotDeleted();
     if (requestedKind != kind) {
       throw new KindImmutableException(id.value());
@@ -99,7 +103,11 @@ public final class Category extends AggregateRoot implements Referenceable {
       return false;
     }
     checkNewParent(details.parentId(), next.parentId(), parents, hasActiveChildren);
+    boolean parentChanged = !Objects.equals(details.parentId(), next.parentId());
     details = next;
+    if (parentChanged) {
+      registerEvent(CategoryChanged.of(this, Ensure.notNull(now, "now")));
+    }
     return true;
   }
 
@@ -113,7 +121,8 @@ public final class Category extends AggregateRoot implements Referenceable {
   }
 
   /**
-   * Còn giao dịch hoặc danh mục con thì chỉ archive được (ADR-005 D7). Xoá lần nữa là no-op.
+   * Còn giao dịch hoặc danh mục con thì chỉ archive được (ADR-005 D7). Xoá lần nữa là no-op. Xoá
+   * được thì ghi {@link CategoryChanged} (ADR-007 G14).
    *
    * @param isInUse có giao dịch chưa xoá trỏ vào, hoặc có danh mục con chưa xoá
    */
@@ -125,6 +134,7 @@ public final class Category extends AggregateRoot implements Referenceable {
       throw new InUseException(LedgerEntity.CATEGORY, id.value());
     }
     deletedAt = Ensure.notNull(now, "now");
+    registerEvent(CategoryChanged.of(this, now));
     return true;
   }
 

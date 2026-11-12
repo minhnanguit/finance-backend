@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +62,18 @@ class CategoryPersistenceAdapter
     return repository
         .findByIdAndUserId(id.value(), owner.value())
         .map(CategoryPersistenceMapper::toDomain);
+  }
+
+  @Override
+  public List<Category> findAll(UserId owner, Collection<CategoryId> ids) {
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    return repository
+        .findByUserIdAndIdIn(owner.value(), ids.stream().map(CategoryId::value).toList())
+        .stream()
+        .map(CategoryPersistenceMapper::toDomain)
+        .toList();
   }
 
   @Override

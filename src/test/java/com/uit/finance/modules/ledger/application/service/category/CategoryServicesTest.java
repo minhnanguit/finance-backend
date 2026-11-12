@@ -14,6 +14,7 @@ import com.uit.finance.modules.ledger.application.port.in.category.CreateCategor
 import com.uit.finance.modules.ledger.application.port.in.category.DeleteCategoryUseCase.DeleteCategoryCommand;
 import com.uit.finance.modules.ledger.application.port.in.category.UpdateCategoryUseCase.UpdateCategoryCommand;
 import com.uit.finance.modules.ledger.application.service.support.LedgerFakes;
+import com.uit.finance.modules.ledger.domain.event.CategoryChanged;
 import com.uit.finance.modules.ledger.domain.exception.InUseException;
 import com.uit.finance.modules.ledger.domain.exception.KindImmutableException;
 import com.uit.finance.modules.ledger.domain.exception.LimitExceededException;
@@ -32,6 +33,7 @@ class CategoryServicesTest {
 
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
   private LedgerFakes.Store store;
+  private LedgerFakes.RecordingEvents events;
   private CreateCategoryService create;
   private UpdateCategoryService update;
   private DeleteCategoryService delete;
@@ -39,9 +41,10 @@ class CategoryServicesTest {
   @BeforeEach
   void setUp() {
     store = new LedgerFakes.Store();
+    events = new LedgerFakes.RecordingEvents();
     create = new CreateCategoryService(store, store, store);
-    update = new UpdateCategoryService(store, store, store);
-    delete = new DeleteCategoryService(store, store, store, clock);
+    update = new UpdateCategoryService(store, store, store, events, clock);
+    delete = new DeleteCategoryService(store, store, store, events, clock);
   }
 
   private static CategoryFields expense(String name, UUID parentId) {
@@ -126,5 +129,38 @@ class CategoryServicesTest {
     assertRejected(
         () -> delete.delete(new DeleteCategoryCommand(ANN, food.getId().value())),
         InUseException.CODE);
+    assertThat(events.published).isEmpty();
+  }
+
+  @Test
+  @DisplayName("xoá danh mục phát CategoryChanged sau khi lưu (ADR-007 G14)")
+  void deletePublishesCategoryChanged() {
+    Category food = category(ANN, CategoryKind.EXPENSE);
+    store.put(food);
+
+    delete.delete(new DeleteCategoryCommand(ANN, food.getId().value()));
+
+    assertThat(store.updates).isEqualTo(1);
+    assertThat(events.published)
+        .singleElement()
+        .isInstanceOfSatisfying(
+            CategoryChanged.class,
+            event -> assertThat(event.categoryId()).isEqualTo(food.getId().value()));
+  }
+
+  @Test
+  @DisplayName("đổi cha phát CategoryChanged; đổi tên thì không")
+  void onlyReparentPublishesCategoryChanged() {
+    Category food = category(ANN, CategoryKind.EXPENSE);
+    Category drinks = category(ANN, CategoryKind.EXPENSE);
+    store.put(food);
+    store.put(drinks);
+    UUID drinksId = drinks.getId().value();
+
+    update.update(new UpdateCategoryCommand(ANN, drinksId, expense("Nước", null)));
+    assertThat(events.published).isEmpty();
+
+    update.update(new UpdateCategoryCommand(ANN, drinksId, expense("Nước", food.getId().value())));
+    assertThat(events.published).singleElement().isInstanceOf(CategoryChanged.class);
   }
 }

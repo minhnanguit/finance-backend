@@ -23,6 +23,7 @@ import com.uit.finance.shared.kernel.DomainEvent;
 import com.uit.finance.shared.kernel.DomainEventPublisher;
 import com.uit.finance.shared.kernel.UserId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +139,11 @@ public final class LedgerFakes {
       return Optional.ofNullable(categories.get(id.value()))
           .filter(category -> category.isOwnedBy(owner))
           .map(Store::copy);
+    }
+
+    @Override
+    public List<Category> findAll(UserId owner, Collection<CategoryId> ids) {
+      return ids.stream().map(id -> find(owner, id)).flatMap(Optional::stream).toList();
     }
 
     @Override

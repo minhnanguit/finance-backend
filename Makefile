@@ -29,7 +29,8 @@ up: ## Bật Postgres + Redis + RabbitMQ + Keycloak + Mailpit, chờ tới khi h
 	@grep -qs '^KC_FINANCE_BACKEND_SECRET=' deploy/.env || { \
 	  echo "KC_FINANCE_BACKEND_SECRET=$$(openssl rand -hex 32)" >> deploy/.env; \
 	  echo "Đã sinh secret cho client finance-backend vào deploy/.env"; }
-	$(COMPOSE) up -d --wait
+	$(COMPOSE) up -d --build --wait postgres redis rabbitmq keycloak mailpit
+	$(COMPOSE) run --rm keycloak-config
 
 down: ## Tắt hạ tầng nhưng GIỮ nguyên dữ liệu trong volume
 	$(COMPOSE) down
