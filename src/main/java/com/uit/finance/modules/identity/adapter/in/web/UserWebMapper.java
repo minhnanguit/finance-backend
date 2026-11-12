@@ -1,6 +1,8 @@
 package com.uit.finance.modules.identity.adapter.in.web;
 
+import com.uit.finance.api.v1.model.AccountDeletionStatus;
 import com.uit.finance.modules.identity.application.port.in.GetUserProfileUseCase;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import org.springframework.stereotype.Component;
 
@@ -13,5 +15,11 @@ class UserWebMapper {
         .email(profile.email())
         .displayName(profile.displayName())
         .createdAt(profile.createdAt().atOffset(ZoneOffset.UTC));
+  }
+
+  AccountDeletionStatus toDeletionStatus(Instant requestedAt) {
+    return new AccountDeletionStatus()
+        .status(AccountDeletionStatus.StatusEnum.DELETING)
+        .requestedAt(requestedAt.atOffset(ZoneOffset.UTC));
   }
 }
