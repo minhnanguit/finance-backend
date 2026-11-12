@@ -36,6 +36,7 @@ Queue luôn tạo qua `ConsumerQueues.forEvent(queueName, routingKey)`: quorum q
 6. Lỗi thì **để exception bay lên** — container retry (backoff 1s ×2, tối đa 5 lần, cap 30s) rồi đẩy vào `<queue>.parked`. Đừng nuốt exception trong listener.
 7. `default-requeue-rejected=false`, ack mode `AUTO` (container ack sau khi listener xong). Đừng đổi sang broker auto-ack.
 8. Header chuẩn: `x-event-id`, `x-event-type`, `x-schema-version`. Envelope có `eventId, type, schemaVersion, occurredAt, traceId, userId, payload`.
+9. Outbox và dedup có hạn sống: `event_publication` đã hoàn tất + `processed_events` bị xoá sau **30 ngày** (`EventStoreRetentionJob`, `app.messaging.retention`, ADR-008 T6). Message redeliver sau mốc đó sẽ chạy lại handler — nên handler vẫn phải an toàn khi chạy lại (xoá theo `user_id`, upsert...), dedup chỉ là lớp chặn nhanh.
 
 ## Cái gì KHÔNG qua RabbitMQ (ADR-003, ARCHITECTURE §5.4)
 
