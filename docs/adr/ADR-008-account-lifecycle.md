@@ -50,6 +50,7 @@ quan sát được (đếm dòng chờ) và không phụ thuộc broker.
 | A9 | `202` hoặc `403 identity.user_deleted` → xoá DB + khoá + token + cài đặt theo user. Tín hiệu từ máy khác chỉ có hiệu lực khi access token bị từ chối **vẫn là token hiện tại**. Máy không kịp nhận 403 (xem Chấp nhận) → màn đăng nhập có "Xoá dữ liệu trên máy này" khi không còn phiên mà máy còn sổ |
 | A2' | Lỗi không rõ kết quả lúc gửi xoá (đứt kết nối, 5xx) → app hỏi lại `GET /me` bằng token mới: `403 user_deleted` = đã xoá, `200` = chắc chắn chưa, lỗi tiếp = báo "chưa rõ". Đoạn từ lúc gửi xoá tới lúc dọn máy không bị huỷ khi màn bị đóng. Gắn token mới vào phiên theo **user**, không theo refresh token (sync nền có thể vừa xoay token) |
 | A10 | Đổi mật khẩu: authorization request kèm `kc_action=UPDATE_PASSWORD` (Keycloak AIA). `kc_action_status=success` → đổi code, kiểm `sub`, **thay phiên trên máy bằng token mới** (ô "Đăng xuất khỏi thiết bị khác" có thể huỷ phiên cũ của app); `cancelled` → bỏ qua. Không dùng Account Console |
+| A11 | Xác nhận lại (A2) và đổi mật khẩu (A10) mở trình duyệt **ephemeral** (Android `setEphemeralBrowsingEnabled`, Chrome 136+; iOS vốn ephemeral). Phiên app không còn là phiên SSO của trình duyệt, nên nút "Restart login" (`skip_logout=false`) hay đăng nhập tài khoản khác trong trình duyệt không đóng được phiên app. Đăng nhập/đăng ký giữ trình duyệt thường (link xác minh email mở ở trình duyệt thường vẫn nối được). Đổi mật khẩu xong, phiên app vừa bị thay được đóng nếu khác `sid` |
 | ~~K, P1, P2~~ | **Gỡ 2026-11-12**: khoá app, chặn chụp màn hình, che recents chưa cần. Các dòng K/P1/P2 dưới đây là thiết kế để làm lại khi cần; P3, P4 vẫn hiệu lực |
 | K1, K2 | Khoá app dùng xác thực của hệ điều hành (`BiometricPrompt` STRONG\|DEVICE_CREDENTIAL, `LAPolicyDeviceOwnerAuthentication`), là lớp UI, **không** gắn vào khoá DB |
 | K6 | Màn khoá là **dialog toàn màn hình** (window/layer tạo sau): nằm trên mọi dialog, bottom sheet, menu đang mở, nuốt nút back, giữ focus. Nội dung bên dưới bị gỡ khỏi cây accessibility khi khoá |
@@ -71,6 +72,9 @@ UserDeletionFinalizerJob (mỗi 1 phút, quá purge-delay)
 ```
 
 - Mã lỗi mới: `identity.reauth_required` (403), `identity.user_deleted` (403), `sync.cursor_expired` (410).
+- Realm có từ trước (`--import-realm` chỉ import realm mới): `make up` chạy `deploy/keycloak/configure-realm.sh`, tạo client
+  `finance-backend` nếu thiếu, đồng bộ secret với `deploy/.env`, gán `manage-users`. Chạy lại bao nhiêu lần cũng được, không
+  cần `make reset`.
 - Secret của `finance-backend`: local thì `make up` sinh ngẫu nhiên một lần vào `deploy/.env` (Keycloak nhận lúc import
   realm, `make run` truyền cho backend); production lấy từ secret manager. Thiếu secret → log ERROR lúc khởi động, việc
   xoá Keycloak nằm chờ (không mất) tới khi cấu hình đúng.
