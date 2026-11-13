@@ -66,6 +66,15 @@ public final class TestIdentityProvider {
     return token(ISSUER, AUDIENCE, subject, email, displayName, Instant.now().plusSeconds(300));
   }
 
+  /**
+   * Token có claim {@code auth_time}: lúc user nhập mật khẩu lần gần nhất (Keycloak thêm claim này
+   * qua scope {@code basic}). Dùng cho thao tác đòi đăng nhập lại (ADR-008 A2).
+   */
+  public String validToken(String subject, String email, String displayName, Instant authTime) {
+    return token(
+        ISSUER, AUDIENCE, subject, email, displayName, Instant.now().plusSeconds(300), authTime);
+  }
+
   String token(
       String issuer,
       String audience,
@@ -73,9 +82,24 @@ public final class TestIdentityProvider {
       String email,
       String displayName,
       Instant expiresAt) {
+    return token(issuer, audience, subject, email, displayName, expiresAt, null);
+  }
+
+  private String token(
+      String issuer,
+      String audience,
+      String subject,
+      String email,
+      String displayName,
+      Instant expiresAt,
+      Instant authTime) {
     try {
+      JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
+      if (authTime != null) {
+        builder.claim("auth_time", authTime.getEpochSecond());
+      }
       JWTClaimsSet claims =
-          new JWTClaimsSet.Builder()
+          builder
               .issuer(issuer)
               .audience(List.of(audience))
               .subject(subject)

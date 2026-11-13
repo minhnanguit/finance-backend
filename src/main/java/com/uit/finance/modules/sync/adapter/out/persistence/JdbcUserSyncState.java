@@ -18,7 +18,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *   <li>{@link ChangeSequencer} cho module ghi dữ liệu: một câu upsert vừa tạo dòng ở lần đầu, vừa
  *       khoá dòng, vừa tăng số. Hai lần ghi của cùng user xếp hàng ở đây tới khi lần trước commit;
  *       user khác nhau không chờ nhau.
- *   <li>{@link SyncStatePort} cho chính module sync: số cuối đã phát, trạng thái khởi tạo.
+ *   <li>{@link SyncStatePort} cho chính module sync: số cuối đã phát, trạng thái khởi tạo, mốc dọn
+ *       tombstone (ADR-008 T2).
  * </ul>
  */
 @Component
@@ -114,6 +115,36 @@ class JdbcUserSyncState implements ChangeSequencer, SyncStatePort {
         .query(Long.class)
         .optional()
         .orElse(0L);
+  }
+
+  @Override
+  public long purgedThroughSeq(UserId owner) {
+    return jdbc.sql("SELECT purged_through_seq FROM user_sync_state WHERE user_id = :userId")
+        .param("userId", owner.value())
+        .query(Long.class)
+        .optional()
+        .orElse(0L);
+  }
+
+  @Override
+  public void recordPurged(UserId owner, long throughSeq) {
+    requireTransaction();
+    jdbc.sql(
+            """
+            UPDATE user_sync_state
+            SET purged_through_seq = GREATEST(purged_through_seq, :throughSeq), updated_at = now()
+            WHERE user_id = :userId
+            """)
+        .param("userId", owner.value())
+        .param("throughSeq", throughSeq)
+        .update();
+  }
+
+  @Override
+  public void deleteState(UserId owner) {
+    jdbc.sql("DELETE FROM user_sync_state WHERE user_id = :userId")
+        .param("userId", owner.value())
+        .update();
   }
 
   /** Ngoài transaction thì khoá nhả ngay sau câu lệnh và thứ tự số không còn khớp thứ tự commit. */

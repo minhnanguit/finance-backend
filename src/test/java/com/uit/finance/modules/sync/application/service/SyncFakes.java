@@ -16,9 +16,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /** Fake in-memory cho port của sync. */
 final class SyncFakes {
@@ -63,6 +65,33 @@ final class SyncFakes {
     public void initialize(UserId owner) {
       initializations++;
     }
+
+    /** Chủ có tombstone quá hạn, theo thứ tự tăng dần; mỗi lần dọn trả số lớn nhất đã xoá. */
+    final List<UserId> tombstoneOwners = new ArrayList<>();
+
+    final Map<UserId, Long> purgeResults = new HashMap<>();
+    final List<UserId> purged = new ArrayList<>();
+    final Set<UserId> failingOwners = new HashSet<>();
+
+    final List<UserId> afterOwnersAsked = new ArrayList<>();
+
+    @Override
+    public List<UserId> ownersWithTombstonesBefore(
+        Instant cutoff, @Nullable UserId afterOwner, int limit) {
+      afterOwnersAsked.add(afterOwner);
+      int start = afterOwner == null ? 0 : tombstoneOwners.indexOf(afterOwner) + 1;
+      return tombstoneOwners.subList(start, tombstoneOwners.size()).stream().limit(limit).toList();
+    }
+
+    @Override
+    public OptionalLong purgeTombstones(UserId owner, Instant cutoff) {
+      if (failingOwners.contains(owner)) {
+        throw new IllegalStateException("simulated failure");
+      }
+      purged.add(owner);
+      Long seq = purgeResults.get(owner);
+      return seq == null ? OptionalLong.empty() : OptionalLong.of(seq);
+    }
   }
 
   static final class OpLog implements OpLogPort {
@@ -82,6 +111,13 @@ final class SyncFakes {
       }
       entries.put(entry.opId(), entry);
       return true;
+    }
+
+    @Override
+    public int deleteAllOf(UserId owner) {
+      int before = entries.size();
+      entries.clear();
+      return before;
     }
 
     @Override
@@ -125,6 +161,25 @@ final class SyncFakes {
     @Override
     public long lastIssuedSeq(UserId owner) {
       return 0;
+    }
+
+    final Map<UserId, Long> purgedThrough = new HashMap<>();
+    final Set<UserId> deleted = new HashSet<>();
+
+    @Override
+    public long purgedThroughSeq(UserId owner) {
+      return purgedThrough.getOrDefault(owner, 0L);
+    }
+
+    @Override
+    public void recordPurged(UserId owner, long throughSeq) {
+      purgedThrough.merge(owner, throughSeq, Math::max);
+    }
+
+    @Override
+    public void deleteState(UserId owner) {
+      deleted.add(owner);
+      initialized.remove(owner);
     }
   }
 }

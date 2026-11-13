@@ -71,6 +71,11 @@ services:
       # trên máy Mac sẽ bị redirect sang 10.0.2.2 và treo. Admin dùng hostname localhost riêng.
       KC_HOSTNAME_ADMIN: http://localhost:8082
       KC_HEALTH_ENABLED: "true"
+      # Secret của client finance-backend (service account xoá tài khoản, ADR-008). realm-finance.json đọc biến
+      # này lúc import; backend dùng cùng giá trị qua KEYCLOAK_ADMIN_CLIENT_SECRET. `make up` sinh giá trị ngẫu
+      # nhiên vào deploy/.env (compose tự đọc). Giá trị mặc định chỉ dùng khi gọi `docker compose` trực tiếp mà
+      # chưa qua `make up` — biết trước, đừng bật tunnel với nó.
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:-local-dev-finance-backend-secret}
     ports:
       - "8082:8080"     # console + OIDC endpoints  http://localhost:8082
     volumes:
@@ -90,7 +95,7 @@ services:
       retries: 30
       start_period: 40s
 
-  # Cập nhật realm đã tồn tại; Keycloak --import-realm chỉ import realm mới.
+  # Cập nhật realm đã tồn tại (theme, locale, client finance-backend); Keycloak --import-realm chỉ import realm mới.
   keycloak-config:
     image: finance-keycloak:26.7.4-theme
     profiles: [configure]
@@ -99,6 +104,8 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KEYCLOAK_URL: http://keycloak:8080
+      # Cùng secret với service keycloak; rỗng thì script dừng và báo chạy `make up`.
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:-}
     volumes:
       - ./keycloak/configure-realm.sh:/opt/finance/configure-realm.sh:ro
     depends_on:

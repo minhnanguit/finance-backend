@@ -24,6 +24,11 @@ help: ## Liệt kê mọi lệnh make của repo này
 # ---------- Hạ tầng (Docker) ----------
 
 up: ## Bật Postgres + Redis + RabbitMQ + Keycloak + Mailpit, chờ tới khi healthy
+	@# Secret của client finance-backend (quyền manage-users, ADR-008 A8): sinh ngẫu nhiên MỘT lần cho máy này, giữ
+	@# trong deploy/.env (gitignore). Keycloak nhận lúc import realm; `make run` truyền cùng giá trị cho backend.
+	@grep -qs '^KC_FINANCE_BACKEND_SECRET=' deploy/.env || { \
+	  echo "KC_FINANCE_BACKEND_SECRET=$$(openssl rand -hex 32)" >> deploy/.env; \
+	  echo "Đã sinh secret cho client finance-backend vào deploy/.env"; }
 	$(COMPOSE) up -d --build --wait postgres redis rabbitmq keycloak mailpit
 	$(COMPOSE) run --rm keycloak-config
 
@@ -42,7 +47,8 @@ logs: ## Xem log realtime của hạ tầng (Ctrl+C để thoát)
 # ---------- Chạy ứng dụng ----------
 
 run: ## Chạy Spring Boot ở cổng 18473 — chiếm terminal, Ctrl+C để dừng
-	$(GRADLE) bootRun
+	KEYCLOAK_ADMIN_CLIENT_SECRET="$${KEYCLOAK_ADMIN_CLIENT_SECRET:-$$(sed -n 's/^KC_FINANCE_BACKEND_SECRET=//p' deploy/.env 2>/dev/null | tail -1)}" \
+	  $(GRADLE) bootRun
 
 health: ## Gọi /actuator/health để biết backend đã sống chưa
 	@curl -fsS $(BASE_URL)/actuator/health && echo

@@ -21,7 +21,7 @@ public record ChangePage(List<ChangeRecord> changes, Cursor next, boolean hasMor
         candidates.stream().sorted(Comparator.comparingLong(ChangeRecord::changeSeq)).toList();
     boolean hasMore = sorted.size() > limit;
     List<ChangeRecord> page = hasMore ? sorted.subList(0, limit) : sorted;
-    Cursor next = page.isEmpty() ? since : new Cursor(page.getLast().changeSeq());
+    Cursor next = page.isEmpty() ? since : since.advancedTo(page.getLast().changeSeq());
     return new ChangePage(page, next, hasMore);
   }
 }

@@ -60,6 +60,11 @@ class ProvisionUserService implements ProvisionUserUseCase {
         .orElseThrow(() -> new UserProvisioningFailedException(subject.value()));
   }
 
+  /**
+   * @throws com.uit.finance.modules.identity.domain.exception.UserDeletedException tài khoản đã
+   *     xoá: token còn hạn không được ghi lại email/tên vừa bị xoá, cũng không tạo được tài khoản
+   *     mới
+   */
   private UserId refreshProfile(User user, Email email, DisplayName displayName) {
     User updated = user.withProfile(email, displayName);
     if (updated != user) {

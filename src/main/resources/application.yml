@@ -92,6 +92,23 @@ app:
   identity:
     subject-cache-ttl: 10m
     subject-cache-size: 10000
+    # Mỗi instance hỏi lại "tài khoản đã xoá chưa" sau chừng này (ADR-008 A6).
+    account-status-cache-ttl: 30s
+    deletion:
+      # Từ lúc user yêu cầu xoá tới lúc các module xoá thật dữ liệu. Phải >= account-status-cache-ttl.
+      purge-delay: 10m
+      finalize-interval: 1m
+      # Job xoá tài khoản Keycloak (hàng đợi bền users.idp_removed_at, thử lại tới khi xong).
+      idp-removal-interval: 15s
+    # Client finance-backend (service account, realm-management/manage-users) để xoá tài khoản Keycloak.
+    keycloak-admin:
+      enabled: ${KEYCLOAK_ADMIN_ENABLED:true}
+      base-url: ${KEYCLOAK_ADMIN_BASE_URL:http://localhost:8082}
+      realm: finance
+      client-id: finance-backend
+      # Quyền manage-users nên KHÔNG có giá trị mặc định trong code: local thì `make up` sinh ngẫu nhiên vào
+      # deploy/.env và `make run` truyền vào đây; production lấy từ secret manager.
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
   # Giới hạn theo endpoint (ADR-006 B4). Thêm endpoint = thêm dòng, không sửa code.
   request-limits:
     rate-limit-enabled: true
@@ -106,6 +123,11 @@ app:
         path: /api/v1/sync/pull
         limit: 120
         window: 1m
+      - name: account-deletion
+        method: DELETE
+        path: /api/v1/me
+        limit: 5
+        window: 1m
     body-limits:
       - method: POST
         path: /api/v1/sync/push
@@ -113,6 +135,14 @@ app:
   sync:
     op-log-retention: 30d
     op-log-purge-cron: "0 30 3 * * *"
+    # Tombstone giữ 90 ngày rồi xoá thật; máy giữ cursor cũ hơn nhận 410 sync.cursor_expired (ADR-008 T1–T5).
+    tombstone-retention: 90d
+    tombstone-purge-cron: "0 45 3 * * *"
+  # Event đã gửi (archive) và dấu chống trùng của consumer: xoá sau 30 ngày, vì archive giữ cả payload có
+  # dữ liệu cá nhân (email trong identity.user.registered) — ADR-008.
+  messaging:
+    retention: 30d
+    cleanup-cron: "0 15 4 * * *"
   idempotency:
     ttl: 24h
     in-progress-ttl: 30s

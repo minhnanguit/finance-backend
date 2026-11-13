@@ -26,4 +26,11 @@ public interface OpLogPort {
    * @return số dòng đã xoá
    */
   int purgeProcessedBefore(Instant cutoff, int batchSize);
+
+  /**
+   * Xoá toàn bộ nhật ký op của user đã xoá tài khoản (ADR-008 A7).
+   *
+   * @return số dòng đã xoá
+   */
+  int deleteAllOf(UserId owner);
 }

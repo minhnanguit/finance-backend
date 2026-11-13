@@ -12,7 +12,10 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
-/** Trả 401 / 403 dạng RFC 7807 để đồng bộ với mọi error response khác của API. */
+/**
+ * Trả 401 / 403 dạng RFC 7807 để đồng bộ với mọi error response khác của API. Tài khoản đã xoá là
+ * 403 kèm mã riêng ({@link InactiveAccountException}).
+ */
 @Component
 class ProblemAuthenticationEntryPoint implements AuthenticationEntryPoint, AccessDeniedHandler {
 
@@ -28,6 +31,13 @@ class ProblemAuthenticationEntryPoint implements AuthenticationEntryPoint, Acces
   public void commence(
       HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
       throws IOException {
+    if (ex instanceof InactiveAccountException inactive) {
+      // Token đúng chữ ký nhưng tài khoản đã xoá: 403 để app không thử refresh/đăng nhập lại
+      // (ADR-008).
+      writer.write(
+          response, problems.create(HttpStatus.FORBIDDEN, inactive.code(), inactive.getMessage()));
+      return;
+    }
     writer.write(
         response,
         problems.create(

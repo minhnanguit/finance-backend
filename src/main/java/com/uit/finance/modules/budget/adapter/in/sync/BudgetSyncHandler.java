@@ -9,6 +9,7 @@ import com.uit.finance.modules.budget.application.port.in.CreateBudgetUseCase;
 import com.uit.finance.modules.budget.application.port.in.CreateBudgetUseCase.CreateBudgetCommand;
 import com.uit.finance.modules.budget.application.port.in.DeleteBudgetUseCase;
 import com.uit.finance.modules.budget.application.port.in.DeleteBudgetUseCase.DeleteBudgetCommand;
+import com.uit.finance.modules.budget.application.port.in.PurgeBudgetTombstonesUseCase;
 import com.uit.finance.modules.budget.application.port.in.UpdateBudgetUseCase;
 import com.uit.finance.modules.budget.application.port.in.UpdateBudgetUseCase.UpdateBudgetCommand;
 import com.uit.finance.modules.budget.domain.exception.BudgetDeletedException;
@@ -19,9 +20,12 @@ import com.uit.finance.shared.sync.SyncChange;
 import com.uit.finance.shared.sync.SyncHandler;
 import com.uit.finance.shared.sync.SyncOp;
 import com.uit.finance.shared.sync.SyncOpResult;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -36,16 +40,19 @@ class BudgetSyncHandler implements SyncHandler {
   private final CreateBudgetUseCase create;
   private final UpdateBudgetUseCase update;
   private final DeleteBudgetUseCase delete;
+  private final PurgeBudgetTombstonesUseCase tombstones;
 
   BudgetSyncHandler(
       BudgetChangeFeedUseCase feed,
       CreateBudgetUseCase create,
       UpdateBudgetUseCase update,
-      DeleteBudgetUseCase delete) {
+      DeleteBudgetUseCase delete,
+      PurgeBudgetTombstonesUseCase tombstones) {
     this.feed = feed;
     this.create = create;
     this.update = update;
     this.delete = delete;
+    this.tombstones = tombstones;
   }
 
   @Override
@@ -93,5 +100,16 @@ class BudgetSyncHandler implements SyncHandler {
   @Override
   public List<SyncChange> changesSince(UserId owner, long afterSeq, int limit) {
     return feed.since(owner, afterSeq, limit).stream().map(BudgetSyncMapper::toChange).toList();
+  }
+
+  @Override
+  public List<UserId> ownersWithTombstonesBefore(
+      Instant cutoff, @Nullable UserId afterOwner, int limit) {
+    return tombstones.ownersWithTombstones(cutoff, afterOwner, limit);
+  }
+
+  @Override
+  public OptionalLong purgeTombstones(UserId owner, Instant cutoff) {
+    return tombstones.purgeTombstones(owner, cutoff);
   }
 }
