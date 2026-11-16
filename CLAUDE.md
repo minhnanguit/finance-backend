@@ -33,12 +33,13 @@ Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` đ�
 | `make mail` | Mở Mailpit đọc mail verify / reset password |
 | `make kc-db` | Tạo database `keycloak` khi volume Postgres đã có sẵn từ trước |
 | `make tunnel` | HTTPS công khai `*.trycloudflare.com` cho Keycloak + API — container `edge` (Caddy, chia path, chặn `/admin`) + `tunnel` (cloudflared). Không pull được image thì `TUNNEL_MODE=native make tunnel` (brew). URL **đổi mỗi lần bật lại**; ghi vào `deploy/.env`, `make run` tự lấy issuer mới |
+| `make prod-secrets` / `prod-up` / `prod-backup` … | **Chạy trên server production**: stack `deploy/docker-compose.prod.yml` (profile Spring `prod`, Caddy + Let's Encrypt, SMTP Brevo). Hướng dẫn `deploy/PROD.md` |
 | `make tunnel-off` / `make tunnel-url` | Tắt tunnel (quay về `http://10.0.2.2:8081`) / in URL đang dùng |
 
 Chạy nối tiếp nhiều việc: `make up run`, `make fmt test itest`.
 
 Không có lint riêng: **Spotless (google-java-format) là lint**; ArchUnit là "lint kiến trúc".
-CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTest` → `bootJar`. Tag `v*` → release `api/openapi.yaml`.
+CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTest` → `bootJar` (+ e2e theme Keycloak). Tag `v*` → build image ARM64 lên GHCR → `deploy.yml` SSH vào server chạy `deploy/release.sh <tag>` (tự rollback) + release `api/openapi.yaml`. Plan: `docs/CICD-PLAN.md` ở repo cha.
 
 ## 3. Architecture map
 

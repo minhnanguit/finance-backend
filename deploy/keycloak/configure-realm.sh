@@ -51,4 +51,19 @@ fi
   --cclientid realm-management \
   --rolename manage-users
 
+# SMTP thật (production, deploy/docker-compose.prod.yml). Dev không truyền SMTP_HOST nên giữ Mailpit của realm-finance.json.
+if [[ -n "${SMTP_HOST:-}" ]]; then
+  "$KCADM" update realms/finance \
+    -s "smtpServer.host=${SMTP_HOST}" \
+    -s "smtpServer.port=${SMTP_PORT:-587}" \
+    -s 'smtpServer.starttls=true' \
+    -s 'smtpServer.ssl=false' \
+    -s 'smtpServer.auth=true' \
+    -s "smtpServer.user=${SMTP_USER}" \
+    -s "smtpServer.password=${SMTP_PASSWORD}" \
+    -s "smtpServer.from=${SMTP_FROM}" \
+    -s "smtpServer.fromDisplayName=${SMTP_FROM_NAME:-Finance}"
+  echo "SMTP set to ${SMTP_HOST}:${SMTP_PORT:-587}."
+fi
+
 echo "Finance realm theme, locales and the finance-backend client are configured."
