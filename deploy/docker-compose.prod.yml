@@ -3,7 +3,8 @@
 #   server: deploy/release.sh v2.1.0   (CI gọi qua SSH — pull, up, health, hỏng thì tự quay về bản trước)
 #   Mac:    make prod-up               (IMAGE_TAG=local, build tại chỗ từ mã nguồn để thử)
 # Chỉ Caddy publish cổng ra ngoài (80/443). Keycloak admin chỉ nghe 127.0.0.1 — vào bằng SSH tunnel.
-# mem_limit cộng lại ~3.3 GB: chạy được trên VPS 4 GB.
+# Chỉnh cho máy nhỏ (~1 GB RAM + swap, ví dụ Azure B2pts_v2): heap JVM cố định nhỏ, pool DB nhỏ. Máy lớn hơn muốn
+# heap rộng hơn thì đặt APP_JAVA_OPTS / KC_JAVA_HEAP trong deploy/.env.prod.
 
 # Tên project riêng: không có dòng này thì compose lấy tên thư mục `deploy` — trùng với stack dev và dùng chung volume.
 name: finance-prod
@@ -66,8 +67,8 @@ services:
     build:
       context: ../keycloak-theme
       dockerfile: Dockerfile
-    mem_limit: 1g
-    command: ["start", "--import-realm"]
+    mem_limit: 768m
+    command: ["start", "--optimized", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?thiếu KC_ADMIN_PASSWORD}
@@ -85,6 +86,9 @@ services:
       # Admin console chỉ mở qua SSH tunnel: ssh -L 8082:127.0.0.1:8082 <server> rồi vào http://localhost:8082/admin
       KC_HOSTNAME_ADMIN: http://localhost:8082
       KC_HEALTH_ENABLED: "true"
+      # Mặc định của image: heap = 70% mem_limit, pool DB tối đa 100 kết nối — thừa cho một người dùng.
+      JAVA_OPTS_KC_HEAP: ${KC_JAVA_HEAP:--Xms64m -Xmx320m}
+      KC_DB_POOL_MAX_SIZE: "10"
       KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:?thiếu KC_FINANCE_BACKEND_SECRET}
     ports:
       - "127.0.0.1:${KC_ADMIN_PORT:-8082}:8080"
@@ -133,9 +137,12 @@ services:
       context: ..
       dockerfile: Dockerfile
     image: ghcr.io/minhnanguit/finance-backend:${IMAGE_TAG:-local}
-    mem_limit: 1g
+    mem_limit: 640m
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      # Đè JAVA_TOOL_OPTIONS của Dockerfile: heap cố định, chỉ JIT C1 + SerialGC (ít RAM/CPU, đủ cho một người dùng).
+      JAVA_TOOL_OPTIONS: ${APP_JAVA_OPTS:--Xms64m -Xmx256m -XX:MaxMetaspaceSize=200m -XX:ReservedCodeCacheSize=48m -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "5"
       DB_URL: jdbc:postgresql://postgres:5432/finance
       DB_USER: finance
       DB_PASSWORD: ${DB_PASSWORD}

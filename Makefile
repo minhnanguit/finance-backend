@@ -16,7 +16,7 @@ endif
 .DEFAULT_GOAL := help
 .PHONY: help up down reset ps logs run health swagger rabbit kc kc-db mail tunnel tunnel-off tunnel-url test itest build fmt lint api clean \
         prod-secrets prod-up prod-down prod-ps prod-logs prod-health prod-backup \
-        srv-setup srv-sync srv-env srv-ci srv-deploy srv-logs srv-admin
+        srv-setup srv-sync srv-env srv-smtp-key srv-ci srv-deploy srv-logs srv-admin
 
 help: ## Liệt kê mọi lệnh make của repo này
 	@echo "finance-backend — các lệnh có sẵn:"
@@ -153,6 +153,12 @@ srv-env: ## [Mac→server] Tạo (nếu chưa có) rồi mở deploy/.env.prod t
 	@test -n "$(DOMAIN)" || { echo "Thiếu DOMAIN=xxx.duckdns.org"; exit 1; }
 	ssh -t $(SRV) 'cd $(SRV_DIR) && { test -f deploy/.env.prod || make -s prod-secrets; } \
 	  && sed -i "s/^DOMAIN=$$/DOMAIN=$(DOMAIN)/" deploy/.env.prod && nano deploy/.env.prod'
+
+srv-smtp-key: ## [Mac→server] Dán SMTP key Brevo (không hiện trên màn hình) vào deploy/.env.prod trên server
+	@printf 'Dán SMTP key Brevo rồi Enter (không hiện ra): '; stty -echo; read -r key; stty echo; echo; \
+	  test -n "$$key" || { echo "Key rỗng — không đổi gì."; exit 1; }; \
+	  printf '%s' "$$key" | ssh $(SRV) 'cd $(SRV_DIR) && k=$$(cat) && sed -i "s|^SMTP_PASSWORD=.*|SMTP_PASSWORD=$$k|" deploy/.env.prod \
+	    && grep -q "^SMTP_PASSWORD=." deploy/.env.prod && echo "✅ Đã lưu SMTP key vào deploy/.env.prod trên server."'
 
 srv-ci: ## [Mac→server+GitHub] Một lần: tạo SSH key riêng cho CI, cài lên server, nạp 4 secret DEPLOY_* (cần gh auth login)
 	@test -f $(CI_KEY) || ssh-keygen -q -t ed25519 -N '' -C finance-ci-deploy -f $(CI_KEY)

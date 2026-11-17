@@ -24,6 +24,7 @@ gọi health HTTPS → hỏng ở đâu thì **tự quay về bản trước** v
 | Phát hành bản mới | Đẩy tag `vX.Y.Z` (bản thử: `vX.Y.Z-rc.N`) |
 | Deploy lại / lùi về bản cũ | `make srv-deploy TAG=v2.0.0` (hoặc GitHub → Actions → deploy → Run workflow) |
 | Log / Admin Console | `make srv-logs S=app` / `make srv-admin` |
+| Deploy lúc máy đang tắt (00:00–07:00, lịch tiết kiệm credit Azure) | SSH fail ⇒ `az vm start -g finance-prod-rg -n finance-prod` rồi `make srv-deploy TAG=...`, hoặc chờ sau 07:00 |
 | Bản đang chạy | `ssh finance-prod cat finance-backend/deploy/.release` |
 
 **Migration phải tương thích ngược:** lùi image không lùi schema (Flyway chạy khi app khởi động). Xoá/đổi tên cột thì
@@ -101,8 +102,8 @@ Thử stack production **trên Mac** trước khi phát hành: `make prod-secret
 
 ```bash
 make prod-backup           # pg_dumpall cả hai DB vào ~/finance-backups, giữ 7 bản; dump không trọn vẹn ⇒ báo lỗi
-# Cron 03:15 hằng ngày do srv-setup cài:
-# 15 3 * * * cd ~/finance-backend && make prod-backup >> ~/finance-backups/backup.log 2>&1
+# Cron 23:30 hằng ngày do srv-setup cài (máy Azure tự tắt 00:00–07:00 giờ VN):
+# 30 23 * * * cd ~/finance-backend && make prod-backup >> ~/finance-backups/backup.log 2>&1
 ```
 
 Khôi phục vào stack trắng: `gunzip -c <file>.sql.gz | docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod --env-file deploy/.release exec -T postgres psql -U finance -d postgres`.

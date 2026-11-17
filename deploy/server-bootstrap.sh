@@ -8,8 +8,8 @@ HOME_DIR=$(getent passwd "$OWNER" | cut -d: -f6)
 
 echo "== Gói cơ bản"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq make rsync curl ca-certificates >/dev/null
+apt-get -o DPkg::Lock::Timeout=300 update -qq  # máy mới: unattended-upgrades có thể đang giữ khoá apt
+apt-get -o DPkg::Lock::Timeout=300 install -y -qq make rsync curl ca-certificates >/dev/null
 
 echo "== Docker"
 command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
@@ -31,10 +31,10 @@ fi
 echo "== Múi giờ"
 timedatectl set-timezone Asia/Ho_Chi_Minh
 
-echo "== Cron backup 03:15 hằng ngày"
-line='15 3 * * * cd ~/finance-backend && make prod-backup >> ~/finance-backups/backup.log 2>&1'
-current=$(crontab -u "$OWNER" -l 2>/dev/null || true)
-grep -qF 'make prod-backup' <<<"$current" || printf '%s\n%s\n' "$current" "$line" | sed '/^$/d' | crontab -u "$OWNER" -
+echo "== Cron backup 23:30 hằng ngày (máy Azure tự tắt 00:00–07:00)"
+line='30 23 * * * cd ~/finance-backend && make prod-backup >> ~/finance-backups/backup.log 2>&1'
+current=$(crontab -u "$OWNER" -l 2>/dev/null | grep -vF 'make prod-backup' || true)
+printf '%s\n%s\n' "$current" "$line" | sed '/^$/d' | crontab -u "$OWNER" -
 install -d -o "$OWNER" -g "$OWNER" "$HOME_DIR/finance-backend" "$HOME_DIR/finance-backups"
 
 echo "✅ Xong. Docker $(docker --version | awk '{print $3}' | tr -d ,)"
