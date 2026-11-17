@@ -1,0 +1,99 @@
+name: deploy
+
+# Đưa một tag đã có image trên GHCR lên server production (docs/CICD-PLAN.md).
+#  - Tự động: ci.yml gọi sau khi test xanh + build image xong (đẩy tag v*).
+#  - Bấm tay: Actions → deploy → Run workflow, nhập tag — để deploy lại hoặc lùi về bản cũ
+#    (hoặc từ Mac: make srv-deploy TAG=v2.1.0). Image chỉ tồn tại khi tag đó đã qua test ⇒ không deploy được bản đỏ.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag đã có image trên GHCR, ví dụ v2.1.0"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Không bao giờ có 2 lần deploy chồng nhau; lần đang chạy không bị huỷ.
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Kiểm tra tag
+        run: |
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "::error::Tag không hợp lệ: $TAG"; exit 1; }
+
+      # Chỉ cần cấu hình (Makefile + deploy/) của đúng tag; server không giữ mã nguồn.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          sparse-checkout: deploy
+          persist-credentials: false
+
+      - name: Cấu hình SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          for v in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            [[ -n ${!v} ]] || { echo "::error::Thiếu secret $v — chạy 'make srv-ci' trên Mac"; exit 1; }
+          done
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<CFG
+          Host prod
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+            ServerAliveInterval 30
+            ConnectTimeout 20
+          CFG
+
+      - name: Chép cấu hình lên server
+        # Giống `make srv-sync`: không đụng deploy/.env.prod (secret) và deploy/.release (tag đang chạy).
+        run: |
+          rsync -az --delete --exclude .env.prod --exclude .release --exclude .env --exclude .tunnel --exclude .DS_Store \
+            Makefile deploy prod:finance-backend/
+
+      # Token chỉ sống trong job này (packages: read); logout ở bước cuối dù deploy hỏng.
+      - name: Đăng nhập GHCR trên server
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        # GHCR_USER, TAG cố ý ghép phía runner (đã kiểm định dạng); token đi qua stdin, không nằm trên dòng lệnh.
+        run: |
+          # shellcheck disable=SC2029
+          printf '%s' "$GHCR_TOKEN" | ssh prod "docker login ghcr.io -u '$GHCR_USER' --password-stdin"
+
+      - name: Deploy ${{ inputs.tag }}
+        run: |
+          # shellcheck disable=SC2029
+          ssh prod "cd finance-backend && deploy/release.sh '$TAG'"
+
+      - name: Đăng xuất GHCR
+        if: always()
+        run: ssh prod 'docker logout ghcr.io' || true
+
+      - name: Tóm tắt
+        if: always()
+        run: echo "Deploy \`$TAG\` → ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
