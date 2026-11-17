@@ -1,6 +1,6 @@
 # Rule — Ranh giới kiến trúc (Clean Architecture + Spring Modulith)
 
-Luôn áp dụng. Vi phạm là **fail build** ở `./gradlew test`, không phải góp ý review.
+Luôn áp dụng. Vi phạm là **fail build** ở `make test`, không phải góp ý review.
 
 ## Hình dạng một module
 

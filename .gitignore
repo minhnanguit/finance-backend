@@ -1,10 +1,17 @@
 .gradle/
 build/
 bin/
-out/
+/out/
 *.log
 .idea/
 *.iml
 .vscode/
 .DS_Store
 .env
+deploy/.tunnel/
+
+# Secret production (chỉ nằm trên server)
+deploy/.env.prod
+
+# Tag image đang chạy trên server (deploy/release.sh ghi)
+deploy/.release

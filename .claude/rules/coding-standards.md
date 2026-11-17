@@ -2,7 +2,7 @@
 
 ## Format & lint
 
-- `./gradlew spotlessApply` trước khi commit. `spotlessCheck` chặn CI.
+- `make fmt` trước khi commit. `spotlessCheck` chặn CI.
 - google-java-format, `removeUnusedImports`, `formatAnnotations`. Target `src/**/*.java`.
 - Compiler args MapStruct đã bật `unmappedTargetPolicy=ERROR` — mapping thiếu là lỗi compile.
 
@@ -24,7 +24,7 @@ Mặc định **package-private**. Chỉ `public` khi thật sự là API vượ
 - Aggregate: `extends AggregateRoot`, expose `getX()`, factory tĩnh `create(...)` / `register(...)` và `rehydrate(...)`.
 - Không setter, không constructor rỗng ở domain.
 - Lỗi nghiệp vụ = subclass `DomainException` với `ErrorCategory` + `code` ổn định dạng `<module>.<reason>` (ví dụ `identity.email_taken`). `shared/web` map category → HTTP status:
-  `VALIDATION→400 · NOT_FOUND→404 · CONFLICT→409 · AUTHENTICATION→401 · FORBIDDEN→403 · BUSINESS_RULE→422`.
+  `VALIDATION→400 · NOT_FOUND→404 · CONFLICT→409 · GONE→410 · AUTHENTICATION→401 · FORBIDDEN→403 · BUSINESS_RULE→422`.
 - **Không bao giờ** ném exception HTTP-specific từ domain/application.
 
 ## Application service
@@ -32,13 +32,13 @@ Mặc định **package-private**. Chỉ `public` khi thật sự là API vượ
 ```java
 @Service
 @Transactional
-class RegisterUserService implements RegisterUserUseCase {
+class ProvisionUserService implements ProvisionUserUseCase {
   // constructor injection, field final, không @Autowired
 }
 ```
 
 - Một use case = một interface trong `port/in` + record `Command` lồng bên trong.
-- Port out hẹp theo use case (`LoadUserPort`, `SaveUserPort`, `PasswordHasherPort`) — **cấm** `Repository<T>` generic.
+- Port out hẹp theo use case (`LoadUserPort`, `SaveUserPort`) — **cấm** `Repository<T>` generic.
 - Thời gian lấy từ bean `java.time.Clock` (inject), không `Instant.now()` rải rác.
 - Publish event trong transaction: `events.publishAll(aggregate.pullDomainEvents())`.
 

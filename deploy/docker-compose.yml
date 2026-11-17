@@ -1,5 +1,3 @@
-# Local infrastructure for finance-backend (and for finance-mobile developers who need a backend).
-#   docker compose -f deploy/docker-compose.yml up -d
 services:
   postgres:
     image: postgres:17-alpine
@@ -8,9 +6,11 @@ services:
       POSTGRES_USER: finance
       POSTGRES_PASSWORD: finance
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      # Tạo database `keycloak` riêng. CHỈ chạy khi volume còn trống -> `make reset` hoặc `make kc-db`.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U finance -d finance"]
       interval: 5s
@@ -45,6 +45,107 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  keycloak:
+    image: finance-keycloak:26.7.4-theme
+    build:
+      context: ../keycloak-theme
+      dockerfile: Dockerfile
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # QUAN TRỌNG: issuer nằm trong token — đổi hostname là mọi token đang có mất hiệu lực.
+      # Mặc định: địa chỉ Android emulator thấy host. `make tunnel` ghi KC_PUBLIC_URL (HTTPS của Cloudflare
+      # Tunnel) vào deploy/.env và recreate container — cả emulator, simulator lẫn máy thật dùng chung.
+      KC_HOSTNAME: ${KC_PUBLIC_URL:-http://10.0.2.2:8082}
+      # Đứng sau Caddy/Cloudflare: tin X-Forwarded-* để lấy đúng scheme và IP client.
+      KC_PROXY_HEADERS: xforwarded
+      # Cho phép backend chạy trên host gọi backchannel qua localhost:8082 mà không lệch hostname.
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # 10.0.2.2 chỉ routable TỪ TRONG emulator. Không có dòng này thì Admin Console mở
+      # trên máy Mac sẽ bị redirect sang 10.0.2.2 và treo. Admin dùng hostname localhost riêng.
+      KC_HOSTNAME_ADMIN: http://localhost:8082
+      KC_HEALTH_ENABLED: "true"
+      # Secret của client finance-backend (service account xoá tài khoản, ADR-008). realm-finance.json đọc biến
+      # này lúc import; backend dùng cùng giá trị qua KEYCLOAK_ADMIN_CLIENT_SECRET. `make up` sinh giá trị ngẫu
+      # nhiên vào deploy/.env (compose tự đọc). Giá trị mặc định chỉ dùng khi gọi `docker compose` trực tiếp mà
+      # chưa qua `make up` — biết trước, đừng bật tunnel với nó.
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:-local-dev-finance-backend-secret}
+    ports:
+      - "8082:8080"     # console + OIDC endpoints  http://localhost:8082
+    volumes:
+      - ./keycloak/realm-finance.json:/opt/keycloak/data/import/realm-finance.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  # Cập nhật realm đã tồn tại (theme, locale, client finance-backend); Keycloak --import-realm chỉ import realm mới.
+  keycloak-config:
+    image: finance-keycloak:26.7.4-theme
+    profiles: [configure]
+    entrypoint: ["/bin/bash", "/opt/finance/configure-realm.sh"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_URL: http://keycloak:8080
+      # Cùng secret với service keycloak; rỗng thì script dừng và báo chạy `make up`.
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:-}
+    volumes:
+      - ./keycloak/configure-realm.sh:/opt/finance/configure-realm.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  # Fake SMTP cho dev: Keycloak gửi mail verify / reset password vào đây.
+  mailpit:
+    image: axllent/mailpit:v1.31.2
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "1025:1025"    # SMTP
+      - "8025:8025"    # web UI  http://localhost:8025
+
+  # ---------- Public HTTPS qua Cloudflare Quick Tunnel (profile "tunnel", bật bằng `make tunnel`) ----------
+  edge:
+    image: caddy:2.11.4-alpine
+    profiles: [tunnel]
+    environment:
+      # Backend chạy trên host bằng `make run`, không nằm trong compose.
+      BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-host.docker.internal:18473}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux; Docker Desktop / OrbStack đã có sẵn
+    volumes:
+      - ./edge/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    profiles: [tunnel]
+    # Quick Tunnel: không cần tài khoản, domain *.trycloudflare.com miễn phí — nhưng URL ĐỔI mỗi lần
+    # container khởi động lại và không có SLA. Chỉ dùng cho dev; production dùng named tunnel + domain riêng.
+    command: ["tunnel", "--no-autoupdate", "--url", "http://edge:80"]
+    depends_on:
+      - edge
 
 volumes:
   postgres-data:

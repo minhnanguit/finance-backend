@@ -8,7 +8,7 @@ plugins {
     id("com.diffplug.spotless") version "8.9.0"
 }
 
-group = "com.mosaicglobal.finance"
+group = "com.uit.finance"
 version = "0.1.0-SNAPSHOT"
 description = "Finance backend – modular monolith"
 
@@ -45,6 +45,8 @@ dependencies {
 
     // Cache / idempotency
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    // In-memory cache for the subject -> user id mapping on the authentication hot path
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     // Messaging
     implementation("org.springframework.boot:spring-boot-starter-amqp")
@@ -82,8 +84,9 @@ openApiGenerate {
     generatorName.set("spring")
     inputSpec.set(layout.projectDirectory.file("api/openapi.yaml").asFile.path)
     outputDir.set(layout.buildDirectory.dir("generated/openapi").get().asFile.path)
-    apiPackage.set("com.mosaicglobal.finance.api.v1")
-    modelPackage.set("com.mosaicglobal.finance.api.v1.model")
+    cleanupOutput.set(true)
+    apiPackage.set("com.uit.finance.api.v1")
+    modelPackage.set("com.uit.finance.api.v1.model")
     globalProperties.set(mapOf("apis" to "", "models" to ""))
     configOptions.set(
         mapOf(

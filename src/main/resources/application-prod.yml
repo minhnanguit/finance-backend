@@ -1,0 +1,43 @@
+# Profile production (SPRING_PROFILES_ACTIVE=prod), chạy bằng deploy/docker-compose.prod.yml.
+# Mọi secret và địa chỉ đều BẮT BUỘC từ env, không có giá trị mặc định: thiếu biến nào thì app không khởi động
+# được, thay vì lặng lẽ chạy với mật khẩu dev.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+server:
+  # Đứng sau Caddy: lấy scheme và IP client thật từ X-Forwarded-*.
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING:0.1}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  security:
+    issuer-uri: ${KEYCLOAK_ISSUER_URI}
+    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI}
+  identity:
+    keycloak-admin:
+      base-url: ${KEYCLOAK_ADMIN_BASE_URL}
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}

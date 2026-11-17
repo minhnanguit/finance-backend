@@ -1,0 +1,26 @@
+# Edge production: MỘT hostname HTTPS cho cả Keycloak lẫn API. Caddy tự xin + gia hạn chứng chỉ Let's Encrypt
+# (cần cổng 80 và 443 mở từ internet và DNS của DOMAIN trỏ về máy này).
+# Luật định tuyến giống deploy/edge/Caddyfile (bản dev sau Cloudflare Tunnel) — sửa thì sửa cả hai.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Admin console và realm master KHÔNG lộ ra internet — chỉ vào qua SSH tunnel (xem deploy/PROD.md).
+	@blocked path /admin /admin/* /realms/master /realms/master/*
+	handle @blocked {
+		respond 404
+	}
+
+	@keycloak path /realms/* /resources/*
+	handle @keycloak {
+		reverse_proxy keycloak:8080
+	}
+
+	@api path /api/* /actuator/health /actuator/health/*
+	handle @api {
+		reverse_proxy app:18473
+	}
+
+	handle {
+		respond 404
+	}
+}

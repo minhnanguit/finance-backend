@@ -1,127 +1,63 @@
 openapi: 3.0.3
 info:
   title: Finance API
-  version: 1.0.0
+  version: 2.3.0
   description: |
-    Contract-first API of the Finance backend. This file is the single source of truth:
-    the backend generates its server interfaces from it and the mobile app generates its client.
+    API contract của finance-backend, là single source of truth: backend generate server interface,
+    app mobile generate client từ file này.
 
-    Conventions
-    - All write endpoints (POST / PUT / PATCH) require an `Idempotency-Key` header (UUID). Replaying the same key
-      with the same payload returns the original response; a different payload returns 422.
-    - Errors follow RFC 7807 `application/problem+json` with an additional machine-readable `code`.
-    - Money is never a float: amounts are integers in minor units plus an ISO-4217 currency code.
+    Authentication
+    - Token do Keycloak issue (Authorization Code + PKCE). API này không có endpoint login,
+      register hay refresh token — tất cả diễn ra ở Keycloak (ADR-004).
+    - Gửi access token qua `Authorization: Bearer <token>`. Claim `aud` phải chứa `finance-api`.
+
+    Quy ước
+    - Mọi write endpoint (POST / PUT / PATCH) bắt buộc header `Idempotency-Key` (UUID). Gửi lại cùng key
+      và cùng payload thì nhận lại response cũ; khác payload thì 422.
+    - Error theo RFC 7807 `application/problem+json`, kèm `code` ổn định, machine-readable.
+    - Tiền không bao giờ là float: integer theo minor units + currency code ISO-4217.
+
+    Đồng bộ (2.1.0, chỉ thêm, không breaking, ADR-002)
+    - App chỉ ghi dữ liệu sổ thu chi qua `POST /api/v1/sync/push`, kéo thay đổi qua `GET /api/v1/sync/pull`.
+    - Dữ liệu từng entity: `AccountData`, `CategoryData`, `TransactionData`. Field lạ, kể cả field do server
+      quản lý (`userId`, `changeSeq`, `version`, `createdAt`...), làm op đó bị `REJECTED`.
+    - Giới hạn: push 60 lần/phút, pull 120 lần/phút mỗi user (vượt → 429 + `Retry-After`); push tối đa
+      100 op và 256 KB.
+
+    Ngân sách (2.2.0, chỉ thêm, không breaking, ADR-007)
+    - Entity sync mới `budget`, dữ liệu `BudgetData`. Ghi qua `/sync/push` như ledger, không có REST riêng.
+    - `categoryId`, `currency`, `startMonth` không đổi được sau khi tạo (`REJECTED budget.immutable_field`).
+    - Mỗi cặp (danh mục, tiền tệ) tối đa 1 ngân sách; bản tới sau nhận `REJECTED budget.duplicate`.
+    - "Đã chi" không có trong contract: app tự tính từ giao dịch local.
+
+    Cài đặt & bảo mật (2.3.0, chỉ thêm, không breaking, ADR-008)
+    - `DELETE /api/v1/me`: xoá vĩnh viễn tài khoản. Bắt buộc vừa đăng nhập lại (claim `auth_time` trong 5 phút).
+    - Tài khoản đã xoá: mọi endpoint trả `403 identity.user_deleted`.
+    - `GET /api/v1/sync/pull` có thể trả `410 sync.cursor_expired` khi máy giữ cursor cũ hơn mốc server đã dọn
+      bản ghi đã xoá (90 ngày): app xoá dữ liệu đã đồng bộ trên máy rồi pull lại từ đầu.
+
+    Breaking changes so với 1.0.0
+    - Xoá `/api/v1/auth/register`, `/login`, `/refresh`, `/logout` cùng các schema đi kèm.
+    - `UserProfile.id` là internal id, không phải `sub` của Keycloak.
 servers:
-  - url: http://localhost:8080
-    description: Local development
+  - url: http://localhost:18473
+    description: Môi trường local
 tags:
-  - name: auth
-    description: Registration, login and session lifecycle
   - name: me
     description: Current user
+  - name: sync
+    description: Đồng bộ offline-first giữa app và server (ADR-002)
+# Chỉ khai http bearer. KHÔNG thêm scheme `openIdConnect`: generator Kotlin multiplatform 7.14 sinh code
+# sai cú pháp cho scheme đó (`mapOf(, ...`), làm gãy build của finance-mobile.
 security:
   - bearerAuth: []
 paths:
-  /api/v1/auth/register:
-    post:
-      tags: [auth]
-      operationId: register
-      summary: Register a new user and open a session on this device
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: User created, session opened
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenPair'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '429': { $ref: '#/components/responses/TooManyRequests' }
-  /api/v1/auth/login:
-    post:
-      tags: [auth]
-      operationId: login
-      summary: Authenticate with email and password and open a session on this device
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Session opened
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenPair'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-        '429': { $ref: '#/components/responses/TooManyRequests' }
-  /api/v1/auth/refresh:
-    post:
-      tags: [auth]
-      operationId: refresh
-      summary: Rotate the refresh token and issue a new access token
-      description: |
-        The presented refresh token is revoked and replaced. Presenting an already-rotated token is treated
-        as a reuse attack: every session of that device is revoked and 401 is returned.
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshRequest'
-      responses:
-        '200':
-          description: New token pair
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenPair'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-  /api/v1/auth/logout:
-    post:
-      tags: [auth]
-      operationId: logout
-      summary: Revoke the session of this device
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LogoutRequest'
-      responses:
-        '204':
-          description: Session revoked (also returned when the token was already invalid)
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/v1/me:
     get:
       tags: [me]
       operationId: getCurrentUser
-      summary: Profile of the authenticated user
+      summary: Profile của user đang login
+      description: Lần gọi đầu tiên với một account Keycloak mới sẽ tự provision local account.
       responses:
         '200':
           description: Current user
@@ -130,104 +66,133 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfile'
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [me]
+      operationId: deleteCurrentUser
+      summary: Xoá vĩnh viễn tài khoản đang đăng nhập
+      description: |
+        Phải đăng nhập lại ngay trước khi gọi (Authorization Code với `prompt=login`): claim `auth_time` của access
+        token phải nằm trong 5 phút gần nhất, nếu không trả `403 identity.reauth_required`.
+
+        Trả `202` ngay khi đã ghi nhận, kèm trạng thái của yêu cầu. Từ lúc đó:
+        - Mọi request bằng token của tài khoản này trả `403 identity.user_deleted`. App xoá dữ liệu trên máy.
+        - Tài khoản Keycloak bị xoá trong vòng ~15 giây (Keycloak lỗi thì thử lại tới khi xong), refresh token trên mọi
+          máy hết hiệu lực.
+        - Ví, danh mục, giao dịch, nhật ký đồng bộ bị xoá thật trong vòng 15 phút.
+
+        Không cần `Idempotency-Key`: gọi lại sau khi đã thành công thì nhận `403 identity.user_deleted`, app coi như xong.
+      responses:
+        '202':
+          description: Đã ghi nhận yêu cầu xoá; phần còn lại chạy ở nền
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeletionStatus'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /api/v1/sync/push:
+    post:
+      tags: [sync]
+      operationId: pushChanges
+      summary: Gửi các thay đổi ghi offline lên server
+      description: |
+        Mỗi op được xử lý trong một transaction riêng; op lỗi không làm hỏng op khác. Kết quả trả theo
+        từng op, luôn kèm `current` là bản ghi hiện tại trên server (null nếu không có hoặc không phải của
+        bạn). Gửi lại cùng `opId` trong 30 ngày nhận `DUPLICATE`.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPushRequest'
+      responses:
+        '200':
+          description: Kết quả từng op, cùng thứ tự với request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPushResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /api/v1/sync/pull:
+    get:
+      tags: [sync]
+      operationId: pullChanges
+      summary: Kéo các thay đổi kể từ cursor lần trước
+      description: |
+        Trả thay đổi của chính user, tăng dần theo `changeSeq`, kể cả bản ghi đã xoá (`deleted = true`).
+        Gọi lặp tới khi `hasMore = false`. Một trang có thể chứa giao dịch trước ví của nó.
+      parameters:
+        - name: since
+          in: query
+          required: false
+          description: '`nextCursor` của lần pull trước. Bỏ trống = từ đầu. Chuỗi opaque, không tự tính.'
+          schema:
+            type: string
+            maxLength: 32
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 500
+            default: 200
+      responses:
+        '200':
+          description: Một trang thay đổi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncPullResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: '`sync.cursor_ahead`: cursor lớn hơn dữ liệu trên server (server được khôi phục). Xoá cursor rồi pull lại từ đầu.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '410':
+          description: |
+            `sync.cursor_expired`: server đã dọn bản ghi đã xoá cũ hơn cursor này (máy offline quá lâu), nên không còn
+            báo được hết những gì đã bị xoá. Gửi hết thay đổi đang chờ, xoá dữ liệu đã đồng bộ trên máy (giữ bản ghi còn
+            op chờ gửi), xoá cursor rồi pull lại từ đầu.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429': { $ref: '#/components/responses/TooManyRequests' }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Access token do Keycloak issue cho client `finance-mobile`.
+        Discovery (local): http://localhost:8081/realms/finance/.well-known/openid-configuration
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: true
-      description: Client-generated UUID, unique per logical operation. Reused verbatim on retries.
+      description: UUID do client generate, unique cho mỗi thao tác. Khi retry thì gửi lại y nguyên.
       schema:
         type: string
         format: uuid
   schemas:
-    DeviceInfo:
-      type: object
-      required: [deviceId, deviceName, platform]
-      properties:
-        deviceId:
-          type: string
-          description: Stable installation identifier generated by the app on first launch
-          minLength: 8
-          maxLength: 128
-        deviceName:
-          type: string
-          maxLength: 100
-          example: Pixel 9
-        platform:
-          type: string
-          enum: [ANDROID, IOS]
-    RegisterRequest:
-      type: object
-      required: [email, password, displayName, device]
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
-        password:
-          type: string
-          format: password
-          minLength: 8
-          maxLength: 72
-        displayName:
-          type: string
-          minLength: 1
-          maxLength: 100
-        device:
-          $ref: '#/components/schemas/DeviceInfo'
-    LoginRequest:
-      type: object
-      required: [email, password, device]
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
-        password:
-          type: string
-          format: password
-          maxLength: 72
-        device:
-          $ref: '#/components/schemas/DeviceInfo'
-    RefreshRequest:
-      type: object
-      required: [refreshToken, deviceId]
-      properties:
-        refreshToken:
-          type: string
-        deviceId:
-          type: string
-          minLength: 8
-          maxLength: 128
-    LogoutRequest:
-      type: object
-      required: [refreshToken]
-      properties:
-        refreshToken:
-          type: string
-    TokenPair:
-      type: object
-      required: [accessToken, refreshToken, tokenType, expiresIn]
-      properties:
-        accessToken:
-          type: string
-          description: Short-lived JWT
-        refreshToken:
-          type: string
-          description: Opaque, single-use, bound to the device
-        tokenType:
-          type: string
-          example: Bearer
-        expiresIn:
-          type: integer
-          format: int32
-          description: Access token lifetime in seconds
     UserProfile:
       type: object
       required: [id, email, displayName, createdAt]
@@ -235,14 +200,276 @@ components:
         id:
           type: string
           format: uuid
+          description: Internal id, là key của mọi business data. Không phải `sub` của Keycloak.
         email:
           type: string
           format: email
+          description: Bản copy từ Keycloak, sync trễ tối đa vài phút sau khi đổi.
         displayName:
           type: string
         createdAt:
           type: string
           format: date-time
+          description: Thời điểm local account được tạo (lần đầu gọi API), không phải lúc register trên Keycloak.
+    AccountDeletionStatus:
+      type: object
+      description: |
+        Trạng thái yêu cầu xoá tài khoản (RFC 9110 §15.3.3: response `202` mô tả việc đang chờ xử lý).
+        Endpoint không có body thì generator chỉ khai `produces = application/problem+json` và client gửi
+        `Accept: application/json` bị `406` — body này giữ `application/json` trong hợp đồng.
+      required: [status, requestedAt]
+      properties:
+        status:
+          type: string
+          enum: [DELETING]
+          description: Tài khoản đã bị khoá, dữ liệu đang chờ xoá hẳn.
+        requestedAt:
+          type: string
+          format: date-time
+          description: Thời điểm server ghi nhận yêu cầu xoá.
+    SyncPushRequest:
+      type: object
+      required: [deviceId, ops]
+      properties:
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: '^[A-Za-z0-9._:-]+$'
+          description: Id cố định của cài đặt app trên máy, dùng cho nhật ký (ADR-006 B9)
+        ops:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/SyncOperation'
+    SyncOperation:
+      type: object
+      required: [opId, entity, id, action]
+      properties:
+        opId:
+          type: string
+          format: uuid
+          description: Do client sinh, duy nhất cho mỗi op. Gửi lại y nguyên khi retry.
+        entity:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: '`account` | `category` | `transaction` | `budget`. Giá trị khác → op bị `REJECTED sync.unknown_entity`.'
+          example: transaction
+        id:
+          type: string
+          format: uuid
+          description: Id bản ghi, do client sinh
+        action:
+          type: string
+          enum: [UPSERT, DELETE]
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: |
+            Bắt buộc khi `UPSERT`, bỏ qua khi `DELETE`. Hình dạng theo `entity`: `AccountData`,
+            `CategoryData`, `TransactionData` hoặc `BudgetData`. Không được có field nào khác.
+    SyncPushResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncOpResult'
+    SyncOpResult:
+      type: object
+      required: [opId, outcome]
+      properties:
+        opId:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [APPLIED, DUPLICATE, CONFLICT, REJECTED, RETRY]
+          description: |
+            APPLIED: đã ghi. DUPLICATE: opId đã xử lý trước đó. CONFLICT: server giữ bản của mình (đã xoá),
+            ghi đè local bằng `current`. REJECTED: bỏ op, khôi phục local theo `current`, báo user.
+            RETRY: ví/danh mục được trỏ tới chưa tới, giữ op và thử lại sau.
+        code:
+          type: string
+          nullable: true
+          description: Mã lỗi khi REJECTED / CONFLICT / RETRY, ví dụ `ledger.in_use`
+        current:
+          $ref: '#/components/schemas/SyncChange'
+    SyncPullResponse:
+      type: object
+      required: [changes, nextCursor, hasMore]
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncChange'
+        nextCursor:
+          type: string
+          description: Gửi lại ở tham số `since` của lần pull sau
+        hasMore:
+          type: boolean
+    SyncChange:
+      type: object
+      nullable: true
+      required: [entity, id, changeSeq, deleted]
+      properties:
+        entity:
+          type: string
+          example: account
+        id:
+          type: string
+          format: uuid
+        changeSeq:
+          type: integer
+          format: int64
+        deleted:
+          type: boolean
+          description: Tombstone. Máy khác phải xoá bản ghi này theo.
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: '`AccountData` / `CategoryData` / `TransactionData` / `BudgetData`; null khi `deleted = true`.'
+    AccountData:
+      type: object
+      additionalProperties: false
+      required: [name, type, currency, openingBalanceMinor, sortOrder, archived]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        type:
+          type: string
+          enum: [CASH, BANK, EWALLET, OTHER]
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: ISO-4217. Khoá lại khi ví đã có giao dịch.
+        openingBalanceMinor:
+          type: integer
+          format: int64
+          minimum: -1000000000000000
+          maximum: 1000000000000000
+        sortOrder:
+          type: integer
+          format: int32
+        archived:
+          type: boolean
+    CategoryData:
+      type: object
+      additionalProperties: false
+      required: [kind, name, archived]
+      properties:
+        kind:
+          type: string
+          enum: [INCOME, EXPENSE]
+          description: Không đổi được sau khi tạo
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Tối đa 2 cấp, cha phải cùng kind
+        icon:
+          type: string
+          nullable: true
+          pattern: '^[a-z0-9_]{1,50}$'
+        color:
+          type: string
+          nullable: true
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        archived:
+          type: boolean
+        templateKey:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Chỉ có ở danh mục mặc định (ví dụ `fee`). Server điền, client gửi lên sẽ bị REJECTED.
+    TransactionData:
+      type: object
+      additionalProperties: false
+      required: [type, status, accountId, amountMinor, currency, occurredOn]
+      properties:
+        type:
+          type: string
+          enum: [INCOME, EXPENSE, TRANSFER]
+        status:
+          type: string
+          enum: [CONFIRMED, DRAFT]
+        accountId:
+          type: string
+          format: uuid
+          description: Ví (với TRANSFER là ví đi)
+        counterAccountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Ví đến, bắt buộc khi TRANSFER
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000000000000
+          description: Luôn dương; chiều tiền do `type` quyết định
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Bắt buộc khi INCOME/EXPENSE, phải null khi TRANSFER
+        occurredOn:
+          type: string
+          format: date
+          description: Ngày theo lịch của user
+        occurredAt:
+          type: string
+          format: date-time
+          nullable: true
+        payee:
+          type: string
+          nullable: true
+          maxLength: 100
+        note:
+          type: string
+          nullable: true
+          maxLength: 500
+    BudgetData:
+      type: object
+      additionalProperties: false
+      required: [categoryId, currency, amountMinor, startMonth]
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+          description: |
+            Danh mục chi cấp 1 (`kind = EXPENSE`, `parentId = null`) của chính user. Không đổi được sau khi tạo.
+            Danh mục chưa tới → `RETRY budget.reference_pending`.
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: ISO-4217. Không đổi được sau khi tạo.
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000000000000
+          description: Mức chi tối đa mỗi tháng, áp cho mọi tháng từ `startMonth`
+        startMonth:
+          type: string
+          format: date
+          description: |
+            Ngày 1 của tháng bắt đầu áp dụng, từ 2000-01-01 tới tháng UTC hiện tại + 1. Không đổi được
+            sau khi tạo.
     FieldError:
       type: object
       required: [field, message]
@@ -253,7 +480,7 @@ components:
           type: string
     Problem:
       type: object
-      description: RFC 7807 Problem Details extended with a stable machine-readable `code`
+      description: RFC 7807 Problem Details, thêm `code` ổn định, machine-readable
       required: [type, title, status, code]
       properties:
         type:
@@ -272,8 +499,8 @@ components:
           format: uri
         code:
           type: string
-          description: Stable error code, e.g. `identity.email_taken`
-          example: identity.email_taken
+          description: Error code ổn định, ví dụ `auth.unauthenticated`
+          example: auth.unauthenticated
         traceId:
           type: string
         errors:
@@ -282,31 +509,50 @@ components:
             $ref: '#/components/schemas/FieldError'
   responses:
     BadRequest:
-      description: Malformed request or validation failure
+      description: Request malformed hoặc không pass validation
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
     Unauthorized:
-      description: Missing, expired or invalid credentials
+      description: Thiếu token, token expired, hoặc sai signature / issuer / audience
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: |
+        `identity.user_deleted`: tài khoản của token đã bị xoá, app xoá dữ liệu trên máy và về màn đăng nhập.
+        `identity.reauth_required` (chỉ ở `DELETE /api/v1/me`): đăng nhập lại rồi gọi lại.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
     Conflict:
-      description: Resource already exists
+      description: Resource đã tồn tại
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
-    UnprocessableEntity:
-      description: Idempotency-Key reused with a different payload
+    PayloadTooLarge:
+      description: Body vượt giới hạn của endpoint
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
     TooManyRequests:
-      description: Rate limit exceeded
+      description: Vượt giới hạn tần suất của user. Chờ đúng `Retry-After` giây rồi gửi lại.
+      headers:
+        Retry-After:
+          description: Số giây phải chờ
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnprocessableEntity:
+      description: Dùng lại Idempotency-Key với payload khác
       content:
         application/problem+json:
           schema:

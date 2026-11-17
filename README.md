@@ -6,23 +6,25 @@ The architecture is locked in [`ARCHITECTURE.md`](../ARCHITECTURE.md) (repo-leve
 
 ## Run locally
 
+Every routine command is a `make` target — run `make` with no argument to list them all.
+
 ```bash
-docker compose -f deploy/docker-compose.yml up -d     # postgres, redis, rabbitmq
-./gradlew bootRun                                      # http://localhost:8080
+make up      # postgres, redis, rabbitmq — waits until all three are healthy
+make run     # http://localhost:18473 (Ctrl+C to stop)
 ```
 
-- Health: `GET /actuator/health` · Modulith: `GET /actuator/modulith`
-- API contract & Swagger UI: `GET /openapi.yaml`, `GET /swagger-ui.html`
-- RabbitMQ UI: http://localhost:15672 (finance / finance)
+- Health: `make health` · Modulith: `GET /actuator/modulith`
+- API contract & Swagger UI: `make swagger` · `GET /openapi.yaml`
+- RabbitMQ UI: `make rabbit` — http://localhost:15672 (finance / finance)
+- Stop the infrastructure: `make down` (keeps data) · `make reset` (wipes the volumes)
 
 Try it:
 
 ```bash
-KEY=$(uuidgen)
-curl -s -X POST localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -H "Idempotency-Key: $KEY" \
-  -d '{"email":"alice@example.com","password":"correct horse battery","displayName":"Alice",
-       "device":{"deviceId":"dev-00000001","deviceName":"Pixel 9","platform":"ANDROID"}}'
+curl -s -i localhost:18473/api/v1/me     # no token → 401 problem+json
 ```
+
+Sign-in, sign-up and token refresh happen at Keycloak (`make kc`, ADR-004); this API only validates the token.
 
 Requires a JDK 21 (auto-provisioned by the Gradle toolchain if missing) and Docker for integration tests.
 
@@ -30,11 +32,14 @@ Requires a JDK 21 (auto-provisioned by the Gradle toolchain if missing) and Dock
 
 | Command | What runs |
 |---|---|
-| `./gradlew test` | Unit tests + **architecture tests** (ArchUnit rules, Modulith verify). No infra needed. |
-| `./gradlew integrationTest` | Spring context + Testcontainers (Postgres, RabbitMQ, Redis). Needs Docker. |
-| `./gradlew build` | Everything above + `spotlessCheck` + boot jar. |
-| `./gradlew spotlessApply` | Format (google-java-format). |
-| `./gradlew openApiGenerate` | Regenerate server interfaces from `api/openapi.yaml` (runs automatically before compile). |
+| `make` | List every target in the Makefile. |
+| `make test` | Unit tests + **architecture tests** (ArchUnit rules, Modulith verify). No infra needed. |
+| `make itest` | Spring context + Testcontainers (Postgres, RabbitMQ, Redis). Needs Docker. |
+| `make build` | Everything above + `spotlessCheck` + boot jar. |
+| `make fmt` | Format (google-java-format). |
+| `make lint` | Check formatting without rewriting files (what CI does). |
+| `make api` | Regenerate server interfaces from `api/openapi.yaml` (runs automatically before compile). |
+| `make clean` | Delete `build/`. |
 
 Module documentation (C4 diagrams, module canvases) is written to `build/spring-modulith-docs` by `ModularityTest`.
 
@@ -42,7 +47,7 @@ Module documentation (C4 diagrams, module canvases) is written to `build/spring-
 
 ```
 api/openapi.yaml                 contract – single source of truth, published per release tag
-src/main/java/com/mosaicglobal/finance
+src/main/java/com/uit/finance
 ├─ FinanceApplication            @Modulithic entry point, Clock bean
 ├─ shared/
 │  ├─ kernel/                    Money, UserId, DomainEvent, AggregateRoot, DomainException – pure Java
@@ -63,11 +68,10 @@ Each module follows `domain → application → adapter` (see `docs/module-templ
 
 ## Contract-first workflow
 
-1. Change `api/openapi.yaml` first. `./gradlew compileJava` regenerates `AuthApi`, `MeApi` and DTOs; controllers implement the interfaces, so a contract change that is not implemented fails to compile.
+1. Change `api/openapi.yaml` first. `./gradlew compileJava` regenerates `MeApi` and DTOs; controllers implement the interfaces, so a contract change that is not implemented fails to compile.
 2. Tag `vX.Y.Z` → CI attaches the contract to the GitHub release. `finance-mobile` pins that version and generates its client from it.
 3. Breaking change → new major, new `/api/v2` path; keep `/v1` for at least two releases.
 
 ## Configuration
 
-Environment variables (see `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `RABBITMQ_*`, `JWT_PRIVATE_KEY_PEM`, `JWT_PUBLIC_KEY_PEM`.
-Without JWT keys the app generates an ephemeral RSA pair (dev only; logged as a warning).
+Environment variables (see `.env.example`): `DB_URL`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `RABBITMQ_*`, `KEYCLOAK_ISSUER_URI`, `KEYCLOAK_JWK_SET_URI`, `KEYCLOAK_AUDIENCE`.

@@ -4,8 +4,8 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 
 | Suite | Lệnh | Cần Docker | Chứa gì |
 |---|---|---|---|
-| `test` | `./gradlew test` | Không | Unit domain (JUnit thuần) · use case với fake port · `ArchitectureRulesTest` · `ModularityTest` · filter test |
-| `integrationTest` | `./gradlew integrationTest` | **Có** | Spring context + Testcontainers (Postgres, RabbitMQ) + `spring-security-test` + `awaitility` |
+| `test` | `make test` | Không | Unit domain (JUnit thuần) · use case với fake port · `ArchitectureRulesTest` · `ModularityTest` · filter test |
+| `integrationTest` | `make itest` | **Có** | Spring context + Testcontainers (Postgres, RabbitMQ) + `spring-security-test` + `awaitility` |
 
 `tasks.check` phụ thuộc `integrationTest`. `integrationTest` `shouldRunAfter(test)`.
 
@@ -13,10 +13,10 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 
 | Đối tượng | Nơi | Cách |
 |---|---|---|
-| Value object, aggregate | `src/test/…/domain/model/` | JUnit thuần, không Spring. Ví dụ `EmailTest`, `UserTest`, `RefreshTokenTest` |
+| Value object, aggregate | `src/test/…/domain/model/` | JUnit thuần, không Spring. Ví dụ `EmailTest`, `UserTest` |
 | Application service | `src/test/…/application/service/` | Fake in-memory cho mọi port out. Mẫu: `IdentityFakes` |
 | Luật kiến trúc | `src/test/…/architecture/` | Đã có; chỉ sửa khi có ADR |
-| Adapter web/persistence/messaging, luồng end-to-end | `src/integrationTest/` | `TestcontainersConfiguration`, `ApiClient`. Mẫu: `AuthFlowIT`, `UserRegisteredEventIT` |
+| Adapter web/persistence/messaging, luồng end-to-end | `src/integrationTest/` | `TestcontainersConfiguration`, `ApiClient`. Mẫu: `JitProvisioningIT`, `UserRegisteredEventIT`. Token có signature thật lấy từ `TestIdentityProvider` |
 
 ## Quy tắc
 
@@ -32,9 +32,9 @@ Hai suite tách bạch, do `jvm-test-suite` cấu hình trong `build.gradle.kts`
 Trước khi báo hoàn thành, phải chạy và báo cáo trung thực kết quả:
 
 ```bash
-./gradlew spotlessApply
-./gradlew test                # luôn luôn
-./gradlew integrationTest     # nếu đụng adapter / migration / messaging / security
+make fmt
+make test     # luôn luôn
+make itest    # nếu đụng adapter / migration / messaging / security
 ```
 
 Nếu không chạy được (thiếu Docker…) thì nói rõ là **chưa chạy**, đừng suy đoán là xanh.

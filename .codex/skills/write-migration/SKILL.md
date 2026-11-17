@@ -53,11 +53,11 @@ Quy ước tên index trong repo: `ix_` cho index thường, `ux_` cho unique.
 2. Chạy:
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d
-./gradlew integrationTest        # Testcontainers chạy Flyway từ đầu → phát hiện migration hỏng
+make up
+make itest        # Testcontainers chạy Flyway từ đầu → phát hiện migration hỏng
 ```
 
-3. Muốn xem trên DB local đang chạy: `./gradlew bootRun` (Flyway migrate lúc startup).
+3. Muốn xem trên DB local đang chạy: `make run` (Flyway migrate lúc startup).
 
 ## Thay đổi phá vỡ
 

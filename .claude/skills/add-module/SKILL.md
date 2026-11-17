@@ -68,8 +68,8 @@ Module muốn expose event cho người khác → `domain/event/package-info.jav
 ## Checklist
 
 - [ ] `package-info.java` có `@ApplicationModule`
-- [ ] `./gradlew test` xanh — gồm 8 luật ArchUnit + `ModularityTest.modulesRespectDeclaredBoundaries`
+- [ ] `make test` xanh — gồm 8 luật ArchUnit + `ModularityTest.modulesRespectDeclaredBoundaries`
 - [ ] Không có class nào của module khác bị import trực tiếp (chỉ qua `port/in` public hoặc `::events`)
 - [ ] Migration Flyway đã thêm, `ddl-auto=validate` pass
-- [ ] `./gradlew integrationTest` xanh
+- [ ] `make itest` xanh
 - [ ] ADR nếu có quyết định không suy ra được từ `docs/module-template.md`

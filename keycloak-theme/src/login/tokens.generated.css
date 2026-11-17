@@ -1,0 +1,30 @@
+/* Generated from tokens/tokens.json. Do not edit by hand. */
+:root {
+    --finance-primary: #4A7D6D;
+    --finance-on-primary: #FFFFFF;
+    --finance-primary-container: #94C1B2;
+    --finance-on-primary-container: #1C3730;
+    --finance-background: #FFFFFF;
+    --finance-surface: #FFFFFF;
+    --finance-on-surface: #121212;
+    --finance-on-surface-variant: #6B6B6B;
+    --finance-outline: #E6E6E6;
+    --finance-error: #D64545;
+    --finance-error-container: #FFE1E1;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+    --finance-primary: #94C1B2;
+        --finance-on-primary: #1C3730;
+        --finance-primary-container: #94C1B2;
+        --finance-on-primary-container: #1C3730;
+        --finance-background: #121212;
+        --finance-surface: #121212;
+        --finance-on-surface: #FFFFFF;
+        --finance-on-surface-variant: #9E9E9E;
+        --finance-outline: #272727;
+        --finance-error: #FF8A80;
+        --finance-error-container: #4A1C1C;
+    }
+}
