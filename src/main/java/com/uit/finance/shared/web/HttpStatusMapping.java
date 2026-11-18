@@ -16,6 +16,7 @@ final class HttpStatusMapping {
       case AUTHENTICATION -> HttpStatus.UNAUTHORIZED;
       case FORBIDDEN -> HttpStatus.FORBIDDEN;
       case BUSINESS_RULE -> HttpStatus.UNPROCESSABLE_CONTENT;
+      case GONE -> HttpStatus.GONE;
     };
   }
 }

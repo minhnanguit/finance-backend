@@ -24,7 +24,7 @@ Mặc định **package-private**. Chỉ `public` khi thật sự là API vượ
 - Aggregate: `extends AggregateRoot`, expose `getX()`, factory tĩnh `create(...)` / `register(...)` và `rehydrate(...)`.
 - Không setter, không constructor rỗng ở domain.
 - Lỗi nghiệp vụ = subclass `DomainException` với `ErrorCategory` + `code` ổn định dạng `<module>.<reason>` (ví dụ `identity.email_taken`). `shared/web` map category → HTTP status:
-  `VALIDATION→400 · NOT_FOUND→404 · CONFLICT→409 · AUTHENTICATION→401 · FORBIDDEN→403 · BUSINESS_RULE→422`.
+  `VALIDATION→400 · NOT_FOUND→404 · CONFLICT→409 · GONE→410 · AUTHENTICATION→401 · FORBIDDEN→403 · BUSINESS_RULE→422`.
 - **Không bao giờ** ném exception HTTP-specific từ domain/application.
 
 ## Application service

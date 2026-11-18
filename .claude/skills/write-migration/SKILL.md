@@ -63,6 +63,10 @@ make itest        # Testcontainers chạy Flyway từ đầu → phát hiện mi
 
 Drop/rename cột đang dùng ⇒ chia 3 release (thêm → backfill + chuyển đọc → drop). Deploy là stateless scale ngang, instance cũ và mới chạy song song trong lúc rollout.
 
+**Mọi migration phải tương thích ngược với bản code liền trước:** deploy hỏng thì `deploy/release.sh` tự chạy lại image cũ
+trên schema MỚI (Flyway không rollback). Thêm bảng/cột nullable hoặc có default: được. Thêm `NOT NULL` không default,
+đổi kiểu, drop/rename: không được trong cùng một release.
+
 Nếu task yêu cầu drop trực tiếp: nói rõ rủi ro cho user, đề xuất phương án 3 bước, **và chỉ làm khi user xác nhận**.
 
 ## Bảng nền tảng — đừng đụng

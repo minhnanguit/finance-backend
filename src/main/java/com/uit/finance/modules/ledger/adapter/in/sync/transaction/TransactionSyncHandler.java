@@ -2,6 +2,7 @@ package com.uit.finance.modules.ledger.adapter.in.sync.transaction;
 
 import static com.uit.finance.modules.ledger.adapter.in.sync.support.LedgerSyncVerdicts.guard;
 
+import com.uit.finance.modules.ledger.application.port.in.maintenance.TombstoneMaintenanceUseCase;
 import com.uit.finance.modules.ledger.application.port.in.transaction.DeleteTransactionUseCase;
 import com.uit.finance.modules.ledger.application.port.in.transaction.DeleteTransactionUseCase.DeleteTransactionCommand;
 import com.uit.finance.modules.ledger.application.port.in.transaction.RecordTransactionUseCase;
@@ -13,15 +14,19 @@ import com.uit.finance.modules.ledger.application.port.in.transaction.UpdateTran
 import com.uit.finance.modules.ledger.application.port.in.transaction.UpdateTransactionUseCase.UpdateTransactionCommand;
 import com.uit.finance.modules.ledger.domain.exception.EntityDeletedException;
 import com.uit.finance.modules.ledger.domain.exception.LedgerNotFoundException;
+import com.uit.finance.modules.ledger.domain.model.shared.LedgerEntity;
 import com.uit.finance.shared.kernel.UserId;
 import com.uit.finance.shared.sync.SyncAction;
 import com.uit.finance.shared.sync.SyncChange;
 import com.uit.finance.shared.sync.SyncHandler;
 import com.uit.finance.shared.sync.SyncOp;
 import com.uit.finance.shared.sync.SyncOpResult;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,16 +40,19 @@ class TransactionSyncHandler implements SyncHandler {
   private final RecordTransactionUseCase record;
   private final UpdateTransactionUseCase update;
   private final DeleteTransactionUseCase delete;
+  private final TombstoneMaintenanceUseCase tombstones;
 
   TransactionSyncHandler(
       TransactionChangeFeedUseCase feed,
       RecordTransactionUseCase record,
       UpdateTransactionUseCase update,
-      DeleteTransactionUseCase delete) {
+      DeleteTransactionUseCase delete,
+      TombstoneMaintenanceUseCase tombstones) {
     this.feed = feed;
     this.record = record;
     this.update = update;
     this.delete = delete;
+    this.tombstones = tombstones;
   }
 
   @Override
@@ -90,5 +98,16 @@ class TransactionSyncHandler implements SyncHandler {
     return feed.since(owner, afterSeq, limit).stream()
         .map(TransactionSyncMapper::toChange)
         .toList();
+  }
+
+  @Override
+  public List<UserId> ownersWithTombstonesBefore(
+      Instant cutoff, @Nullable UserId afterOwner, int limit) {
+    return tombstones.ownersWithTombstones(LedgerEntity.TRANSACTION, cutoff, afterOwner, limit);
+  }
+
+  @Override
+  public OptionalLong purgeTombstones(UserId owner, Instant cutoff) {
+    return tombstones.purgeTombstones(LedgerEntity.TRANSACTION, owner, cutoff);
   }
 }

@@ -29,8 +29,16 @@ class ChangePageReader {
     this.handlers = handlers;
   }
 
+  /**
+   * Mốc dọn tombstone đọc trong cùng snapshot với các trang: job dọn xoá tombstone và nâng mốc
+   * trong một transaction, nên hoặc snapshot còn thấy tombstone, hoặc thấy mốc mới và trả {@code
+   * 410}. Không có lúc client lỡ một lần xoá mà vẫn đi tiếp (ADR-008 T3).
+   */
   ChangePage read(UserId owner, Cursor since, int limit) {
     since.requireNotAhead(state.lastIssuedSeq(owner));
-    return ChangePage.of(handlers.changesSince(owner, since.afterSeq(), limit + 1), limit, since);
+    long purgedThrough = state.purgedThroughSeq(owner);
+    Cursor from = since.isStart() ? Cursor.startingAt(purgedThrough) : since;
+    from.requireNotExpired(purgedThrough);
+    return ChangePage.of(handlers.changesSince(owner, from.afterSeq(), limit + 1), limit, from);
   }
 }

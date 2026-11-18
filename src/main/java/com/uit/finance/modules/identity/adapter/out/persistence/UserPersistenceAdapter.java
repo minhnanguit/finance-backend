@@ -7,6 +7,8 @@ import com.uit.finance.modules.identity.domain.exception.UserNotFoundException;
 import com.uit.finance.modules.identity.domain.model.ExternalSubject;
 import com.uit.finance.modules.identity.domain.model.User;
 import com.uit.finance.shared.kernel.UserId;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
@@ -37,6 +39,13 @@ class UserPersistenceAdapter implements LoadUserPort, SaveUserPort {
   }
 
   @Override
+  public List<User> lockPendingDeletions(Instant requestedBefore, int limit) {
+    return repository.lockPendingDeletions(requestedBefore, limit).stream()
+        .map(UserPersistenceMapper::toDomain)
+        .toList();
+  }
+
+  @Override
   public boolean insertIfAbsent(User user) {
     try {
       return repository.insertIfAbsent(
@@ -59,7 +68,7 @@ class UserPersistenceAdapter implements LoadUserPort, SaveUserPort {
         repository
             .findById(user.getId().value())
             .orElseThrow(() -> new UserNotFoundException(user.getId()));
-    UserPersistenceMapper.applyProfile(entity, user);
+    UserPersistenceMapper.applyState(entity, user);
     repository.saveAndFlush(entity);
   }
 }

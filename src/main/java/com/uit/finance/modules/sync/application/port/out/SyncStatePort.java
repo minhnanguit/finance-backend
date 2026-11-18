@@ -26,4 +26,16 @@ public interface SyncStatePort {
 
   /** Số {@code change_seq} cuối đã phát cho user; 0 nếu chưa ghi gì. */
   long lastIssuedSeq(UserId owner);
+
+  /**
+   * Mốc dọn tombstone của user (ADR-008 T2): mọi tombstone có số không lớn hơn mốc này có thể đã bị
+   * xoá thật. 0 nếu chưa dọn lần nào.
+   */
+  long purgedThroughSeq(UserId owner);
+
+  /** Nâng mốc dọn lên ít nhất {@code throughSeq}, không bao giờ hạ. Gọi sau {@link #lockWrites}. */
+  void recordPurged(UserId owner, long throughSeq);
+
+  /** Xoá trạng thái sync của user đã xoá tài khoản (ADR-008 A7). */
+  void deleteState(UserId owner);
 }

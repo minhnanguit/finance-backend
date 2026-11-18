@@ -1,0 +1,206 @@
+# Production trên MỘT máy (VPS / Oracle Always Free). Hướng dẫn: deploy/PROD.md. Luôn chạy qua Makefile / release.sh.
+# Image app + keycloak lấy từ GHCR theo IMAGE_TAG (CI build khi đẩy tag v*; server ghi tag đang chạy ở deploy/.release):
+#   server: deploy/release.sh v2.1.0   (CI gọi qua SSH — pull, up, health, hỏng thì tự quay về bản trước)
+#   Mac:    make prod-up               (IMAGE_TAG=local, build tại chỗ từ mã nguồn để thử)
+# Chỉ Caddy publish cổng ra ngoài (80/443). Keycloak admin chỉ nghe 127.0.0.1 — vào bằng SSH tunnel.
+# Chỉnh cho máy nhỏ (~1 GB RAM + swap, ví dụ Azure B2pts_v2): heap JVM cố định nhỏ, pool DB nhỏ. Máy lớn hơn muốn
+# heap rộng hơn thì đặt APP_JAVA_OPTS / KC_JAVA_HEAP trong deploy/.env.prod.
+
+# Tên project riêng: không có dòng này thì compose lấy tên thư mục `deploy` — trùng với stack dev và dùng chung volume.
+name: finance-prod
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:17-alpine
+    mem_limit: 512m
+    environment:
+      POSTGRES_DB: finance
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?thiếu DB_PASSWORD trong deploy/.env.prod}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?thiếu KC_DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Tạo database + user `keycloak` với mật khẩu từ env. Chỉ chạy khi volume còn trống.
+      - ./postgres/init-prod:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance -d finance"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    mem_limit: 128m
+    # Chỉ giữ idempotency record + rate limit (ephemeral). Không publish cổng, chỉ mạng nội bộ.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "volatile-lru"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    <<: *restart
+    image: rabbitmq:4-alpine
+    mem_limit: 512m
+    environment:
+      RABBITMQ_DEFAULT_USER: finance
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?thiếu RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    <<: *restart
+    image: ghcr.io/minhnanguit/finance-keycloak:${IMAGE_TAG:-local}
+    build:
+      context: ../keycloak-theme
+      dockerfile: Dockerfile
+    mem_limit: 768m
+    command: ["start", "--optimized", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?thiếu KC_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      # Issuer trong token = https://<DOMAIN>/realms/finance. Đổi domain là mọi token đang có mất hiệu lực.
+      KC_HOSTNAME: https://${DOMAIN:?thiếu DOMAIN}
+      # TLS do Caddy terminate; Keycloak nghe http trong mạng nội bộ và tin X-Forwarded-* từ Caddy.
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      # Backend gọi JWKS + Admin API qua http://keycloak:8080 mà không lệch hostname.
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # Admin console chỉ mở qua SSH tunnel: ssh -L 8082:127.0.0.1:8082 <server> rồi vào http://localhost:8082/admin
+      KC_HOSTNAME_ADMIN: http://localhost:8082
+      KC_HEALTH_ENABLED: "true"
+      # Mặc định của image: heap = 70% mem_limit, pool DB tối đa 100 kết nối — thừa cho một người dùng.
+      JAVA_OPTS_KC_HEAP: ${KC_JAVA_HEAP:--Xms64m -Xmx320m}
+      KC_DB_POOL_MAX_SIZE: "10"
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET:?thiếu KC_FINANCE_BACKEND_SECRET}
+    ports:
+      - "127.0.0.1:${KC_ADMIN_PORT:-8082}:8080"
+    volumes:
+      - ./keycloak/realm-finance.json:/opt/keycloak/data/import/realm-finance.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+  # Đồng bộ realm đã tồn tại với code: theme, locale, client finance-backend, SMTP Brevo. Chạy lại bao nhiêu lần cũng được.
+  keycloak-config:
+    image: ghcr.io/minhnanguit/finance-keycloak:${IMAGE_TAG:-local}
+    profiles: [configure]
+    entrypoint: ["/bin/bash", "/opt/finance/configure-realm.sh"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KEYCLOAK_URL: http://keycloak:8080
+      KC_FINANCE_BACKEND_SECRET: ${KC_FINANCE_BACKEND_SECRET}
+      SMTP_HOST: ${SMTP_HOST:?thiếu SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:?thiếu SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?thiếu SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM:?thiếu SMTP_FROM}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Finance}
+    volumes:
+      - ./keycloak/configure-realm.sh:/opt/finance/configure-realm.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  app:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ghcr.io/minhnanguit/finance-backend:${IMAGE_TAG:-local}
+    mem_limit: 640m
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # Đè JAVA_TOOL_OPTIONS của Dockerfile: heap cố định, chỉ JIT C1 + SerialGC (ít RAM/CPU, đủ cho một người dùng).
+      JAVA_TOOL_OPTIONS: ${APP_JAVA_OPTS:--Xms64m -Xmx256m -XX:MaxMetaspaceSize=200m -XX:ReservedCodeCacheSize=48m -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -Xss512k -XX:+ExitOnOutOfMemoryError}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "5"
+      DB_URL: jdbc:postgresql://postgres:5432/finance
+      DB_USER: finance
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: finance
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      KEYCLOAK_ISSUER_URI: https://${DOMAIN}/realms/finance
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/finance/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KC_FINANCE_BACKEND_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      # Image Ubuntu: /bin/sh là dash (không có /dev/tcp) nên gọi thẳng bash.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/18473 &&
+          printf 'GET /actuator/health/readiness HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status":"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # Cổng duy nhất ra internet. Tự xin + gia hạn chứng chỉ Let's Encrypt cho DOMAIN.
+  caddy:
+    <<: *restart
+    image: caddy:2.11.4-alpine
+    mem_limit: 128m
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./edge/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  caddy-data:
+  caddy-config:

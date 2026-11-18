@@ -8,4 +8,12 @@ public interface ProcessedEventStore {
 
   /** Returns true if this call claimed the event; false if it was processed before. */
   boolean markProcessed(UUID eventId, String consumer, Instant at);
+
+  /**
+   * Deletes at most {@code batchSize} marks older than {@code cutoff}. A broker never redelivers a
+   * message that old, so the mark has no de-duplication value left.
+   *
+   * @return number of rows deleted
+   */
+  int deleteProcessedBefore(Instant cutoff, int batchSize);
 }

@@ -70,3 +70,6 @@ CREATE TABLE recurring_revisions
 -- R10: mỗi effective_from tối đa 1 phiên bản; cũng là index đọc timeline theo thứ tự.
 CREATE UNIQUE INDEX ux_recurring_revisions_effective
   ON recurring_revisions (recurring_id, effective_from);
+
+-- Job dọn tombstone (ADR-008 T1), cùng vai trò ix_budgets_tombstones (V11). Timeline đi theo FK cascade.
+CREATE INDEX ix_recurrings_tombstones ON recurrings (user_id, deleted_at) WHERE deleted_at IS NOT NULL;

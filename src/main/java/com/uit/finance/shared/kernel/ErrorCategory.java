@@ -10,5 +10,7 @@ public enum ErrorCategory {
   CONFLICT,
   AUTHENTICATION,
   FORBIDDEN,
-  BUSINESS_RULE
+  BUSINESS_RULE,
+  /** The state the request relied on no longer exists on the server (e.g. a purged sync cursor). */
+  GONE
 }

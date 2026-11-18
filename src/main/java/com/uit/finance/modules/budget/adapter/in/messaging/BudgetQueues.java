@@ -11,9 +11,16 @@ class BudgetQueues {
 
   static final String CATEGORY_CHANGED_QUEUE = "budget.category-changed";
   static final String CATEGORY_CHANGED_ROUTING_KEY = "ledger.category.changed";
+  static final String USER_DELETED_QUEUE = "budget.user-deleted";
+  static final String USER_DELETED_ROUTING_KEY = "identity.user.deleted";
 
   @Bean
   Declarables budgetQueueDeclarables() {
     return ConsumerQueues.forEvent(CATEGORY_CHANGED_QUEUE, CATEGORY_CHANGED_ROUTING_KEY);
+  }
+
+  @Bean
+  Declarables budgetUserDeletedQueueDeclarables() {
+    return ConsumerQueues.forEvent(USER_DELETED_QUEUE, USER_DELETED_ROUTING_KEY);
   }
 }

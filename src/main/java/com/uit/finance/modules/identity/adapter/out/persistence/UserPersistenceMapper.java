@@ -10,8 +10,12 @@ final class UserPersistenceMapper {
 
   private UserPersistenceMapper() {}
 
-  static void applyProfile(UserJpaEntity entity, User user) {
-    entity.applyProfile(user.getEmail().value(), user.getDisplayName().value(), user.getStatus());
+  static void applyState(UserJpaEntity entity, User user) {
+    entity.applyState(
+        user.getEmail().value(),
+        user.getDisplayName().value(),
+        user.getStatus(),
+        user.getDeletionRequestedAt());
   }
 
   static User toDomain(UserJpaEntity entity) {
@@ -21,6 +25,7 @@ final class UserPersistenceMapper {
         new Email(entity.getEmail()),
         new DisplayName(entity.getDisplayName()),
         entity.getStatus(),
-        entity.getCreatedAt());
+        entity.getCreatedAt(),
+        entity.getDeletionRequestedAt());
   }
 }

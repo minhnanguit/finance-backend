@@ -1,0 +1,13 @@
+.git
+.gradle
+.idea
+.vscode
+build
+bin
+out
+deploy
+keycloak-theme
+docs
+src/test
+src/integrationTest
+**/.DS_Store

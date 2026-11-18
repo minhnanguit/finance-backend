@@ -62,6 +62,13 @@ class JdbcOpLog implements OpLogPort {
         == 1;
   }
 
+  @Override
+  public int deleteAllOf(UserId owner) {
+    return jdbc.sql("DELETE FROM sync_ops WHERE user_id = :userId")
+        .param("userId", owner.value())
+        .update();
+  }
+
   /** {@code ctid} + {@code LIMIT}: Postgres không có {@code DELETE ... LIMIT}. */
   @Override
   public int purgeProcessedBefore(Instant cutoff, int batchSize) {

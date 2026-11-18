@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "users")
@@ -26,6 +27,9 @@ class UserJpaEntity extends AbstractJpaEntity {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
   private UserStatus status;
+
+  @Column(name = "deletion_requested_at")
+  private @Nullable Instant deletionRequestedAt;
 
   protected UserJpaEntity() {}
 
@@ -59,10 +63,16 @@ class UserJpaEntity extends AbstractJpaEntity {
     return status;
   }
 
+  @Nullable Instant getDeletionRequestedAt() {
+    return deletionRequestedAt;
+  }
+
   /** Không có {@code externalSubject}: đó là link tới account Keycloak, immutable. */
-  void applyProfile(String email, String displayName, UserStatus status) {
+  void applyState(
+      String email, String displayName, UserStatus status, @Nullable Instant deletionRequestedAt) {
     this.email = email;
     this.displayName = displayName;
     this.status = status;
+    this.deletionRequestedAt = deletionRequestedAt;
   }
 }

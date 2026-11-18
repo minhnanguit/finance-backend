@@ -1,6 +1,6 @@
 # Rule — Contract-first API
 
-`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `2.0.0`) là **nguồn sự thật duy nhất**.
+`api/openapi.yaml` (OpenAPI 3.0.3, `info.version` hiện tại `2.3.0`) là **nguồn sự thật duy nhất**.
 
 ## Thứ tự bất biến
 
@@ -21,6 +21,7 @@ Cấm: viết `@GetMapping` / `@PostMapping` thủ công cho endpoint nghiệp v
 | Tiền | Không dùng float: số nguyên minor units + mã ISO-4217 |
 | Paging | Cursor-based (xem `shared/web/Cursor`, `CursorPage`) |
 | Endpoint public | Thêm `security: []` trong spec **và** khai báo trong `shared/security/PublicEndpoints` |
+| Response 2xx | **Luôn có body JSON** (vd `202` của `DELETE /me` trả `AccountDeletionStatus`). Endpoint chỉ có response lỗi mang body → generator khai `produces = application/problem+json` → client gửi `Accept: application/json` (Ktor) nhận `406`. `ApiClient` của IT gửi `Accept: application/json` để bắt lỗi này |
 
 ## Controller
 

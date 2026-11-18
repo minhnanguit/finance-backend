@@ -39,7 +39,7 @@ vẫn dùng được cho tới khi session hết hạn — hiện là **30 ngày
 Giảm thiểu: tuyệt đối không log token (đã là luật trong `coding-standards.md`), và cân nhắc
 rút `ssoSessionIdleTimeout` nếu thấy 30 ngày quá rộng.
 
-## Hai chỗ dễ sai nhất
+## Ba chỗ dễ sai nhất
 
 **1. Audience mapper — thiếu là hỏng tất cả.**
 Keycloak **không** tự bỏ `finance-api` vào claim `aud`. Mapper `finance-api-audience` trên client
@@ -49,6 +49,20 @@ Client `finance-api` tồn tại **chỉ** để làm giá trị audience, khôn
 **2. `directAccessGrantsEnabled` phải là `false`.**
 Bật lên là mở Resource Owner Password Grant — deprecated, OAuth 2.1 đã loại bỏ, MFA không chạy đúng.
 ADR-004 quyết định #3 cấm dùng. Đừng bật để "cho tiện test".
+
+**3. Client `finance-backend` — service account và secret không được mất khi export lại.**
+Backend dùng client confidential này (client credentials) gọi Admin API xoá user khi user xoá tài khoản
+(ADR-008 A8). Không đăng nhập người dùng: `standardFlowEnabled` / `directAccessGrantsEnabled` đều `false`.
+
+- Quyền duy nhất là `realm-management/manage-users`, gán cho user `service-account-finance-backend` trong mảng
+  `users` của file realm. Lệnh export bên dưới có `--users skip` nên **bỏ mất** mục này — chép lại tay. Thiếu nó thì
+  Keycloak trả 403: job xoá tài khoản (`users.idp_removed_at`) thử lại mãi, log ERROR sau 1 giờ, tài khoản Keycloak
+  còn nguyên tới khi sửa.
+- `"secret": "${KC_FINANCE_BACKEND_SECRET}"` là placeholder Keycloak thay lúc import. `make up` sinh giá trị ngẫu
+  nhiên **một lần** vào `deploy/.env` (gitignore) — compose truyền cho Keycloak, `make run` truyền cho backend qua
+  `KEYCLOAK_ADMIN_CLIENT_SECRET` (backend không có giá trị mặc định). Realm chỉ import lần đầu: Keycloak cũ chưa có client
+  này, hoặc đã import với secret khác → `make reset && make up`. Bản export chứa secret thật — giữ placeholder, đừng
+  commit. Production: đặt cả hai env bằng secret ngẫu nhiên từ secret manager.
 
 ## Hostname
 

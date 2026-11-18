@@ -8,7 +8,7 @@ Modular monolith (Spring Modulith) phục vụ app Finance mobile.
 - Group: `com.uit.finance` · version `0.1.0-SNAPSHOT`
 - Kiến trúc đã **chốt** ở `../ARCHITECTURE.md` (repo-level, tiếng Việt). Không tự đổi.
 - Hợp đồng API `api/openapi.yaml` là nguồn sự thật duy nhất; `finance-mobile` pin bản này.
-- Module hiện có: `identity` (user local + JIT provisioning từ Keycloak), `notification` (reference consumer), `ledger` (ví, danh mục, giao dịch — ADR-005), `sync` (`/sync/push`, `/sync/pull`, `sync_ops`, `change_seq`, op `CREATE` chỉ ghi khi id chưa có — ADR-002, ADR-009 §3), `budget` (ngân sách theo danh mục — ADR-007), `recurring` (khoản định kỳ: timeline phiên bản + ghi có điều kiện theo `revision` — ADR-009). Rate limit + giới hạn body ở `shared.web.limit`, cấu hình `app.request-limits`.
+- Module hiện có: `identity` (user local + JIT provisioning từ Keycloak; xoá tài khoản 2 pha + Keycloak Admin API — ADR-008), `notification` (reference consumer), `ledger` (ví, danh mục, giao dịch — ADR-005), `budget` (ngân sách theo danh mục, ghi qua sync — ADR-007), `sync` (`/sync/push`, `/sync/pull`, `sync_ops`, `change_seq` — ADR-002; dọn tombstone 90 ngày + `410 sync.cursor_expired` — ADR-008; op `CREATE` chỉ ghi khi id chưa có — ADR-009 §3), `recurring` (khoản định kỳ: timeline phiên bản + ghi có điều kiện theo `revision` — ADR-009). Rate limit + giới hạn body ở `shared.web.limit`, cấu hình `app.request-limits`.
 - Ngoài repo này chỉ còn `finance-mobile` (Kotlin Multiplatform) — **repo riêng, không sửa từ đây**.
 
 ## 2. Commands
@@ -33,12 +33,13 @@ Mọi lệnh thường dùng đều là target trong `Makefile`. Gõ `make` đ�
 | `make mail` | Mở Mailpit đọc mail verify / reset password |
 | `make kc-db` | Tạo database `keycloak` khi volume Postgres đã có sẵn từ trước |
 | `make tunnel` | HTTPS công khai `*.trycloudflare.com` cho Keycloak + API — container `edge` (Caddy, chia path, chặn `/admin`) + `tunnel` (cloudflared). Không pull được image thì `TUNNEL_MODE=native make tunnel` (brew). URL **đổi mỗi lần bật lại**; ghi vào `deploy/.env`, `make run` tự lấy issuer mới |
+| `make prod-secrets` / `prod-up` / `prod-backup` … | **Chạy trên server production**: stack `deploy/docker-compose.prod.yml` (profile Spring `prod`, Caddy + Let's Encrypt, SMTP Brevo). Hướng dẫn `deploy/PROD.md` |
 | `make tunnel-off` / `make tunnel-url` | Tắt tunnel (quay về `http://10.0.2.2:8081`) / in URL đang dùng |
 
 Chạy nối tiếp nhiều việc: `make up run`, `make fmt test itest`.
 
 Không có lint riêng: **Spotless (google-java-format) là lint**; ArchUnit là "lint kiến trúc".
-CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTest` → `bootJar`. Tag `v*` → release `api/openapi.yaml`.
+CI (`.github/workflows/ci.yml`) chạy: `spotlessCheck test` → `integrationTest` → `bootJar` (+ e2e theme Keycloak). Tag `v*` → build image ARM64 lên GHCR → `deploy.yml` SSH vào server chạy `deploy/release.sh <tag>` (tự rollback) + release `api/openapi.yaml`. Plan: `docs/CICD-PLAN.md` ở repo cha.
 
 ## 3. Architecture map
 
@@ -56,10 +57,10 @@ src/main/java/com/uit/finance
 │  └─ messaging/                      FinanceExchanges, ConsumerQueues, EventEnvelope,
 │                                     EventExternalizationConfig, EventDeduplicator, InboundEvents
 └─ modules/<name>/                    domain → application → adapter (xem .claude/rules/architecture-boundaries.md)
-src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity), V3 (external IdP), V4 (ledger), V5 (sync user_sync_state), V6 (sync_ops), V7 (budget), V12 (recurring)
+src/main/resources/db/migration       Flyway V1 (outbox+dedup), V2 (identity), V3 (external IdP), V4 (ledger), V5 (sync user_sync_state), V6 (sync_ops), V7 (budget), V8 (xoá tài khoản), V9 (mốc dọn tombstone), V10 (index tombstone ledger), V11 (index tombstone budget), V12 (recurring)
 src/test/…/architecture               ArchitectureRulesTest (luật 1–8 + #10), ModularityTest
 src/integrationTest                   Testcontainers end-to-end
-docs/adr/ADR-001..009                 quyết định (004 = Keycloak, 005 = ledger, 006 = bảo mật dữ liệu, 007 = budget, 009 = recurring; 002 = sync) · docs/module-template.md
+docs/adr/ADR-001..009                 quyết định (004 = Keycloak, 005 = ledger, 006 = bảo mật dữ liệu, 007 = budget, 008 = vòng đời tài khoản, 009 = recurring; 002 = sync) · docs/module-template.md
 ```
 
 Luồng một event: `@Transactional use case` → `DomainEventPublisher.publishAll` → outbox (`event_publication`, cùng transaction) → sau commit externalize sang exchange `finance.events` → consumer queue → `EventDeduplicator.executeOnce`.
