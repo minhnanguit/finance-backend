@@ -67,7 +67,7 @@ class ApplyOpService {
   }
 
   /**
-   * {@code CREATE} (ADR-008 §3): id đã có với user, còn sống hay tombstone, thì không ghi. Kiểm và
+   * {@code CREATE} (ADR-009 §3): id đã có với user, còn sống hay tombstone, thì không ghi. Kiểm và
    * ghi nằm trong cùng transaction đã khoá user nên 2 {@code CREATE} cùng id chạy lần lượt. Id chưa
    * có với user thì đi đường {@code UPSERT}: handler chỉ còn tạo mới hoặc từ chối id của người
    * khác, không bao giờ là sửa.

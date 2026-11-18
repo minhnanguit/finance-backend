@@ -106,7 +106,7 @@ class RecurringSyncMapperTest {
   }
 
   @Test
-  @DisplayName("bảng dịch outcome theo ADR-008 §6")
+  @DisplayName("bảng dịch outcome theo ADR-009 §6")
   void verdicts() {
     assertThat(RecurringSyncVerdicts.fromCode(RecurringReferencePendingException.CODE).outcome())
         .isEqualTo(SyncOutcome.RETRY);

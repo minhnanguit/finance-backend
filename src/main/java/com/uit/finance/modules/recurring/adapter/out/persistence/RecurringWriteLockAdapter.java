@@ -6,7 +6,7 @@ import com.uit.finance.shared.sync.ChangeSequencer;
 import org.springframework.stereotype.Component;
 
 /**
- * Khoá dòng {@code user_sync_state} của user tới hết transaction (ADR-008 RS14). Cùng khoá mà sync
+ * Khoá dòng {@code user_sync_state} của user tới hết transaction (ADR-009 RS14). Cùng khoá mà sync
  * push lấy ở ADR-002 §7 bước 1.0.
  */
 @Component

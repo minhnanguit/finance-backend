@@ -22,7 +22,7 @@ public record OpVerdict(OpOutcome outcome, @Nullable String code) {
     return new OpVerdict(OpOutcome.DUPLICATE, null);
   }
 
-  /** {@code CREATE} vào id đã có, kể cả tombstone: server giữ bản của mình (ADR-008 §3). */
+  /** {@code CREATE} vào id đã có, kể cả tombstone: server giữ bản của mình (ADR-009 §3). */
   public static OpVerdict alreadyExists() {
     return new OpVerdict(OpOutcome.CONFLICT, ALREADY_EXISTS);
   }

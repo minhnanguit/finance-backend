@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Dữ liệu khoản định kỳ client gửi lên, chưa kiểm tra (schema {@code RecurringData}). Luôn đủ mọi
- * field kể cả khi sửa; {@code revision} là revision client dựa vào (ADR-008 RS8).
+ * field kể cả khi sửa; {@code revision} là revision client dựa vào (ADR-009 RS8).
  */
 public record RecurringFields(
     @Nullable String name,

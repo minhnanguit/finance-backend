@@ -263,7 +263,7 @@ class RecurringTest {
   }
 
   @Test
-  @DisplayName("UUIDv5 khớp vector RFC và vector chung của ADR-008 §2")
+  @DisplayName("UUIDv5 khớp vector RFC và vector chung của ADR-009 §2")
   void occurrenceIdsMatchTheSharedVectors() {
     UUID dns = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
     RecurringId rid = RecurringId.of(UUID.fromString("3f1c2b9e-7a4d-4e8b-9c21-5d6e7f8a9b0c"));

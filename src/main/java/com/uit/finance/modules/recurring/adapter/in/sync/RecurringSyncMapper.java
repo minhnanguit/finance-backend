@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * {@code data} của op ↔ khoản định kỳ, theo schema {@code RecurringData} + {@code
- * RecurrenceRevisionData} của contract 2.3.0.
+ * RecurrenceRevisionData} của contract 2.4.0.
  */
 final class RecurringSyncMapper {
 

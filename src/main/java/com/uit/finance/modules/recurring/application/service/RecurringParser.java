@@ -19,7 +19,7 @@ final class RecurringParser {
 
   private RecurringParser() {}
 
-  /** "Hôm nay" cho các cửa sổ ngày, theo UTC (ADR-008 RS11). */
+  /** "Hôm nay" cho các cửa sổ ngày, theo UTC (ADR-009 RS11). */
   static LocalDate today(Clock clock) {
     return LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
   }

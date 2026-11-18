@@ -6,7 +6,7 @@ import java.time.LocalDate;
 public interface RecurringCountPort {
 
   /**
-   * Số khoản còn hiệu lực của user (ADR-008 §7): chưa xoá và {@code generation_end_date} null hoặc
+   * Số khoản còn hiệu lực của user (ADR-009 §7): chưa xoá và {@code generation_end_date} null hoặc
    * từ {@code endsNotBefore} trở đi.
    */
   long countActive(UserId owner, LocalDate endsNotBefore);

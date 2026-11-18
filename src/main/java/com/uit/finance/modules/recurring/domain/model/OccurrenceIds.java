@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Id giao dịch của một kỳ: {@code UUIDv5(NAMESPACE, "<recurringId>/<yyyy-MM-dd>")} (ADR-008 §2, RFC
+ * Id giao dịch của một kỳ: {@code UUIDv5(NAMESPACE, "<recurringId>/<yyyy-MM-dd>")} (ADR-009 §2, RFC
  * 4122 §4.3). App tính đúng công thức này; server giữ để test vector hai phía khớp nhau và để sau
  * này server có sinh cũng không trùng.
  */

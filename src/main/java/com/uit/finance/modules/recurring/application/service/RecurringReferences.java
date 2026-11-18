@@ -13,7 +13,7 @@ import com.uit.finance.shared.kernel.UserId;
 import java.util.Collection;
 
 /**
- * Kiểm ví/danh mục của các phiên bản thêm hoặc sửa qua {@code ledger::reference} (ADR-008 R12,
+ * Kiểm ví/danh mục của các phiên bản thêm hoặc sửa qua {@code ledger::reference} (ADR-009 R12,
  * RS13). Chỗ duy nhất của module biết hình dạng {@link AccountRef} và {@link CategoryRef}.
  *
  * <p>Archive không chặn (R13: app tự ngừng sinh). Không thấy (chưa tới hoặc của user khác) là

@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Một phiên bản của khoản: áp từ {@code effectiveFrom} tới trước phiên bản kế tiếp (ADR-008 R2).
+ * Một phiên bản của khoản: áp từ {@code effectiveFrom} tới trước phiên bản kế tiếp (ADR-009 R2).
  * Nhịp lặp tính từ {@code anchorDate}, tách khỏi {@code effectiveFrom} (R4).
  */
 public record RecurrenceRevision(

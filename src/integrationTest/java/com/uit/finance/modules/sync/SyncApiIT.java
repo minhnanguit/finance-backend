@@ -526,7 +526,7 @@ class SyncApiIT {
         .isEqualTo(LongStream.rangeClosed(1, 16 + 1 + 20).boxed().toList());
   }
 
-  // ---- CREATE (ADR-008 §3) -------------------------------------------------------------------
+  // ---- CREATE (ADR-009 §3) -------------------------------------------------------------------
 
   private static Map<String, Object> createExpense(
       UUID id, UUID account, UUID category, long amount) {

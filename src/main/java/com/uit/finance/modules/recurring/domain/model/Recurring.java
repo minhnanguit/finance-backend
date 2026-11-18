@@ -16,7 +16,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Khoản định kỳ: phần cố định + timeline phiên bản, ghi có điều kiện theo {@code revision} (ADR-008
+ * Khoản định kỳ: phần cố định + timeline phiên bản, ghi có điều kiện theo {@code revision} (ADR-009
  * R1–R11, RS8, RS11, RS12). Không phát event: chưa module nào cần nghe.
  *
  * <p>"Hôm nay" là ngày UTC do application truyền vào (Clock). Ranh giới "đã hiệu lực" là {@code

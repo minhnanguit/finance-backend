@@ -4,7 +4,7 @@ import com.uit.finance.shared.kernel.UserId;
 import java.util.UUID;
 
 /**
- * Tạo khoản định kỳ theo id do client sinh, {@code revision} gửi lên phải là 0 (ADR-008 RS8).
+ * Tạo khoản định kỳ theo id do client sinh, {@code revision} gửi lên phải là 0 (ADR-009 RS8).
  *
  * <ul>
  *   <li>Id của user khác: {@code recurring.not_found}, không ghi đè (ADR-006 B1).

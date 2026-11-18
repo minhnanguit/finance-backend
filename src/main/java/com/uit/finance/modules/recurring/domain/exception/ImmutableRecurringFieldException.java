@@ -2,7 +2,7 @@ package com.uit.finance.modules.recurring.domain.exception;
 
 import com.uit.finance.shared.kernel.ErrorCategory;
 
-/** Đổi field bất biến, sửa phiên bản đã hiệu lực, mở lại khoản đã kết thúc (ADR-008 R10, R11). */
+/** Đổi field bất biến, sửa phiên bản đã hiệu lực, mở lại khoản đã kết thúc (ADR-009 R10, R11). */
 public class ImmutableRecurringFieldException extends RecurringException {
 
   public static final String CODE = "recurring.immutable_field";

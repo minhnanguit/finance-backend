@@ -1,4 +1,4 @@
-# ADR-008 – Khoản định kỳ
+# ADR-009 – Khoản định kỳ
 
 **Status:** proposed · 2026-11-10 · chờ review lần 1 · triển khai theo `RECURRING-PLAN.md` v2 (root repo) Phase 1–8
 
@@ -83,7 +83,7 @@ nếu op.action == CREATE:
 - **Kiểm rồi ghi an toàn** vì cả hai nằm trong transaction đã khoá user: 2 `CREATE` cùng id của cùng user chạy lần lượt, request sau thấy bản request trước đã commit.
 - `CREATE` khi id chưa có với owner **không bao giờ là update**: `current` rỗng nghĩa là owner không có bản nào; handler chỉ còn đường tạo mới hoặc từ chối ownership.
 - Chỉ `OpAction` (domain sync) có `CREATE`; `SyncAction` (shared, SPI) **giữ nguyên**: sync đổi `CREATE` sang `UPSERT` sau khi kiểm, handler không bao giờ nhận `CREATE`. Handler cũ không phải sửa.
-- Client cũ không gửi `CREATE`. Server cũ (< 2.3.0) nhận `CREATE` sẽ trả 400 vì enum sai: mobile 2.3.0 chỉ chạy với backend ≥ 2.3.0, như mọi lần pin contract.
+- Client cũ không gửi `CREATE`. Server cũ (< 2.4.0) nhận `CREATE` sẽ trả 400 vì enum sai: mobile 2.4.0 chỉ chạy với backend ≥ 2.4.0, như mọi lần pin contract.
 
 ### 4. Bảng
 
@@ -116,7 +116,7 @@ recurring_revisions   id, recurring_id, effective_from, anchor_date,
 | Unique | `(recurring_id, effective_from)` |
 | Index | `(user_id, change_seq)` UNIQUE cho pull · `(recurring_id)` |
 
-Migration: `V8__recurring.sql` (số trống kế tiếp nếu V8 đã có người dùng lúc merge).
+Migration: `V12__recurring.sql` (V8–V11 đã thuộc vòng đời tài khoản, ADR-008).
 
 ### 5. Sync (RS1–RS15)
 
@@ -188,7 +188,7 @@ sync: CREATE                                     chung, trong ApplyOpService
 
 | Thành phần | Chốt |
 |---|---|
-| `modules.sync` | `CREATE` ở `ApplyOpService` (§3). `OpAction` (domain sync) thêm `CREATE`, `SyncAction` (SPI) giữ nguyên. `SyncWebMapper` đang dùng `OpAction.valueOf(...)`: phải có `CREATE` **cùng lúc** contract 2.3.0 lên server, nếu không op `CREATE` gây lỗi 500 thay vì kết quả từng op |
+| `modules.sync` | `CREATE` ở `ApplyOpService` (§3). `OpAction` (domain sync) thêm `CREATE`, `SyncAction` (SPI) giữ nguyên. `SyncWebMapper` đang dùng `OpAction.valueOf(...)`: phải có `CREATE` **cùng lúc** contract 2.4.0 lên server, nếu không op `CREATE` gây lỗi 500 thay vì kết quả từng op |
 | Ledger | `LedgerReferenceQuery.findAccount(UserId, UUID)` → `AccountRef(id, currency, archived, deleted)`. Không thấy / của user khác → rỗng |
 | `package-info` | `@ApplicationModule(displayName = "Recurring", allowedDependencies = {"modules.ledger::reference"})` |
 | Domain | Aggregate `Recurring` (`create` / `rehydrate`, `revise(changes, expectedRevision, today)`, `end(date, today)`, `skipUntil(date, today)`, `delete`), value object `RecurrenceRevision`, `RecurrenceRule`, `RecurringName`. Luật RS11/RS12 nằm trong aggregate, nhận `today` từ service (Clock) |

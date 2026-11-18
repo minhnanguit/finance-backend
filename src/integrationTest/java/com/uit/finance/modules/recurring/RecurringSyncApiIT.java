@@ -35,7 +35,7 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Entity {@code recurring} qua sync HTTP thật, token có chữ ký thật: toàn bộ "test tấn công" Phase
- * 3 của {@code RECURRING-PLAN.md} (ADR-008 §5, §6, §9). Mỗi test dùng user mới.
+ * 3 của {@code RECURRING-PLAN.md} (ADR-009 §5, §6, §9). Mỗi test dùng user mới.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)

@@ -17,6 +17,6 @@ public interface LedgerReferenceQuery {
   /** Một query cho cả lô. Id không thấy bị bỏ qua, thứ tự không bảo đảm. */
   List<CategoryRef> findCategories(UserId owner, Set<UUID> categoryIds);
 
-  /** Ví của chính user, kể cả đã archive/xoá (ADR-008 §8). Chưa có hoặc của user khác: rỗng. */
+  /** Ví của chính user, kể cả đã archive/xoá (ADR-009 §8). Chưa có hoặc của user khác: rỗng. */
   Optional<AccountRef> findAccount(UserId owner, UUID accountId);
 }

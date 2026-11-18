@@ -25,7 +25,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
- * Op của entity {@code recurring} (ADR-008 RS1): UPSERT = tạo nếu chưa có, sửa có điều kiện nếu đã
+ * Op của entity {@code recurring} (ADR-009 RS1): UPSERT = tạo nếu chưa có, sửa có điều kiện nếu đã
  * có; DELETE = tombstone. Mọi luật nằm ở use case. Module sync không biết recurring tồn tại.
  */
 @Component

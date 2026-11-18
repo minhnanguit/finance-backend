@@ -1,4 +1,4 @@
--- Module: recurring — khoản thu/chi định kỳ: phần cố định + timeline phiên bản (ADR-008).
+-- Module: recurring — khoản thu/chi định kỳ: phần cố định + timeline phiên bản (ADR-009).
 --
 -- Domain là lớp chặn chính và trả mã lỗi; CHECK dưới đây là lớp chặn thứ hai.
 --
@@ -36,7 +36,7 @@ CREATE TABLE recurrings
 );
 
 CREATE UNIQUE INDEX ux_recurrings_user_change_seq ON recurrings (user_id, change_seq);
--- Đếm giới hạn 200 khoản còn hiệu lực (ADR-008 §7).
+-- Đếm giới hạn 200 khoản còn hiệu lực (ADR-009 §7).
 CREATE INDEX ix_recurrings_user_active ON recurrings (user_id) WHERE deleted_at IS NULL;
 
 CREATE TABLE recurring_revisions

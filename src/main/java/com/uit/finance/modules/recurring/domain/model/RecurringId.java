@@ -3,7 +3,7 @@ package com.uit.finance.modules.recurring.domain.model;
 import com.uit.finance.shared.kernel.Ensure;
 import java.util.UUID;
 
-/** Id do client sinh (UUIDv4, ADR-008 §4). */
+/** Id do client sinh (UUIDv4, ADR-009 §4). */
 public record RecurringId(UUID value) {
 
   public RecurringId {

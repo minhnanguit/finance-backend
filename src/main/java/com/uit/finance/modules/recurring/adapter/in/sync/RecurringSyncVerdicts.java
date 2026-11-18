@@ -8,7 +8,7 @@ import com.uit.finance.shared.sync.SyncOpResult;
 import java.util.function.Supplier;
 import org.springframework.dao.ConcurrencyFailureException;
 
-/** Dịch lỗi của recurring ra kết quả sync (ADR-008 §6, theo mẫu {@code BudgetSyncVerdicts}). */
+/** Dịch lỗi của recurring ra kết quả sync (ADR-009 §6, theo mẫu {@code BudgetSyncVerdicts}). */
 final class RecurringSyncVerdicts {
 
   static final String CONCURRENT_UPDATE = "recurring.concurrent_update";

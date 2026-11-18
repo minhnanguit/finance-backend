@@ -4,7 +4,7 @@ import com.uit.finance.modules.recurring.domain.exception.InvalidRecurringFieldE
 import org.jspecify.annotations.Nullable;
 
 /**
- * Lịch lặp của một phiên bản (ADR-008 R3). Field không dùng cho {@code frequency} phải {@code
+ * Lịch lặp của một phiên bản (ADR-009 R3). Field không dùng cho {@code frequency} phải {@code
  * null}.
  *
  * @param weekday ISO 1 = thứ Hai … 7 = Chủ Nhật, chỉ có khi {@code WEEKLY}
