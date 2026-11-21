@@ -8,6 +8,7 @@ public record OpVerdict(OpOutcome outcome, @Nullable String code) {
 
   public static final String UNKNOWN_ENTITY = "sync.unknown_entity";
   public static final String SERVER_ERROR = "sync.server_error";
+  public static final String ALREADY_EXISTS = "sync.already_exists";
 
   public OpVerdict {
     Ensure.notNull(outcome, "outcome");
@@ -19,6 +20,11 @@ public record OpVerdict(OpOutcome outcome, @Nullable String code) {
 
   public static OpVerdict duplicate() {
     return new OpVerdict(OpOutcome.DUPLICATE, null);
+  }
+
+  /** {@code CREATE} vào id đã có, kể cả tombstone: server giữ bản của mình (ADR-009 §3). */
+  public static OpVerdict alreadyExists() {
+    return new OpVerdict(OpOutcome.CONFLICT, ALREADY_EXISTS);
   }
 
   public static OpVerdict unknownEntity() {

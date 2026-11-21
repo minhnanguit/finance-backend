@@ -124,11 +124,57 @@ class PushChangesServiceTest {
   @Test
   @DisplayName("entity lạ: REJECTED sync.unknown_entity, current null")
   void unknownEntity() {
-    OpResult result = push(op("recurring")).getFirst();
+    OpResult result = push(op("goal")).getFirst();
 
     assertThat(result.outcome()).isEqualTo(OpOutcome.REJECTED);
     assertThat(result.code()).isEqualTo(OpVerdict.UNKNOWN_ENTITY);
     assertThat(result.current()).isNull();
+  }
+
+  private static PushedOp create(UUID id) {
+    return new PushedOp(UUID.randomUUID(), "account", id, OpAction.CREATE, Map.of("name", "Ví"));
+  }
+
+  @Test
+  @DisplayName("CREATE id chưa có: handler nhận UPSERT, APPLIED, nhật ký giữ action CREATE")
+  void createNewIdIsApplied() {
+    handlers.everyIdExists = false;
+    PushedOp op = create(UUID.randomUUID());
+
+    OpResult result = push(op).getFirst();
+
+    assertThat(result.outcome()).isEqualTo(OpOutcome.APPLIED);
+    assertThat(handlers.receivedActions).containsExactly(OpAction.UPSERT);
+    assertThat(opLog.entries.get(op.opId()).action()).isEqualTo(OpAction.CREATE);
+  }
+
+  @Test
+  @DisplayName(
+      "CREATE id đã có: CONFLICT sync.already_exists kèm bản của server, handler không chạy")
+  void createExistingIdConflicts() {
+    handlers.everyIdExists = false;
+    UUID id = UUID.randomUUID();
+    push(create(id));
+
+    PushedOp again = create(id);
+    OpResult result = push(again).getFirst();
+
+    assertThat(result.outcome()).isEqualTo(OpOutcome.CONFLICT);
+    assertThat(result.code()).isEqualTo(OpVerdict.ALREADY_EXISTS);
+    assertThat(result.current()).isNotNull();
+    assertThat(handlers.applied).hasSize(1);
+    assertThat(opLog.entries.get(again.opId()).code()).isEqualTo(OpVerdict.ALREADY_EXISTS);
+  }
+
+  @Test
+  @DisplayName("CREATE bị CONFLICT là kết quả chốt: gửi lại cùng opId là DUPLICATE")
+  void createConflictIsFinal() {
+    PushedOp op = create(UUID.randomUUID());
+
+    push(op);
+    OpResult again = push(op).getFirst();
+
+    assertThat(again.outcome()).isEqualTo(OpOutcome.DUPLICATE);
   }
 
   @Test

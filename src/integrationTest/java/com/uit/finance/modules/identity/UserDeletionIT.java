@@ -112,7 +112,10 @@ class UserDeletionIT {
     return op;
   }
 
-  /** Một ví, một khoản chi và một ngân sách, để có dữ liệu ở ledger, budget lẫn sync_ops. */
+  /**
+   * Một ví, một khoản chi, một ngân sách và một khoản định kỳ, để có dữ liệu ở ledger, budget,
+   * recurring lẫn sync_ops.
+   */
   private void writeSomeLedgerData(Account account) {
     JsonNode categories = pullAll(account.token());
     UUID food = null;
@@ -144,6 +147,30 @@ class UserDeletionIT {
     budget.put("currency", "VND");
     budget.put("amountMinor", 2_000_000);
     budget.put("startMonth", LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).toString());
+    String from = LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).toString();
+    Map<String, Object> revision = new LinkedHashMap<>();
+    revision.put("id", UUID.randomUUID().toString());
+    revision.put("effectiveFrom", from);
+    revision.put("anchorDate", from);
+    revision.put("accountId", wallet.toString());
+    revision.put("categoryId", food.toString());
+    revision.put("amountMinor", 3_000_000);
+    revision.put("note", null);
+    revision.put("frequency", "MONTHLY");
+    revision.put("interval", 1);
+    revision.put("weekday", null);
+    revision.put("month", null);
+    revision.put("dayOfMonth", 5);
+    revision.put("autoConfirm", false);
+    Map<String, Object> recurring = new LinkedHashMap<>();
+    recurring.put("name", "Tiền nhà");
+    recurring.put("type", "EXPENSE");
+    recurring.put("currency", "VND");
+    recurring.put("generationNotBefore", from);
+    recurring.put("generationEndDate", null);
+    recurring.put("remindDaysBefore", null);
+    recurring.put("revision", 0);
+    recurring.put("revisions", List.of(revision));
     ResponseEntity<String> pushed =
         api.post(
             "/api/v1/sync/push",
@@ -154,7 +181,8 @@ class UserDeletionIT {
                 List.of(
                     op("account", wallet, "UPSERT", walletData),
                     op("transaction", UUID.randomUUID(), "UPSERT", expense),
-                    op("budget", UUID.randomUUID(), "UPSERT", budget))),
+                    op("budget", UUID.randomUUID(), "UPSERT", budget),
+                    op("recurring", UUID.randomUUID(), "UPSERT", recurring))),
             UUID.randomUUID().toString(),
             account.token());
     assertThat(pushed.getStatusCode().value()).as(pushed.getBody()).isEqualTo(200);
@@ -216,7 +244,8 @@ class UserDeletionIT {
     writeSomeLedgerData(bob);
     assertThat(rowsOf("transactions", ann.id())).isEqualTo(1);
     assertThat(rowsOf("budgets", ann.id())).isEqualTo(1);
-    assertThat(rowsOf("sync_ops", ann.id())).isEqualTo(3);
+    assertThat(rowsOf("recurrings", ann.id())).isEqualTo(1);
+    assertThat(rowsOf("sync_ops", ann.id())).isEqualTo(4);
 
     ResponseEntity<String> deleted = api.delete(ME, ann.token());
 
@@ -253,6 +282,7 @@ class UserDeletionIT {
                       "categories",
                       "transactions",
                       "budgets",
+                      "recurrings",
                       "sync_ops",
                       "user_sync_state")) {
                 assertThat(rowsOf(table, ann.id())).as(table).isZero();
@@ -262,6 +292,7 @@ class UserDeletionIT {
     // Người khác không bị ảnh hưởng.
     assertThat(rowsOf("transactions", bob.id())).isEqualTo(1);
     assertThat(rowsOf("budgets", bob.id())).isEqualTo(1);
+    assertThat(rowsOf("recurrings", bob.id())).isEqualTo(1);
     assertThat(api.get(ME, bob.token()).getStatusCode().value()).isEqualTo(200);
     assertThat(keycloak.deleted).doesNotContain(ExternalSubject.of(bob.subject()));
   }

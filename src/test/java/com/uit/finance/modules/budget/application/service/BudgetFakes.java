@@ -196,5 +196,11 @@ final class BudgetFakes {
       Map<UUID, CategoryRef> mine = categories.getOrDefault(owner, Map.of());
       return categoryIds.stream().map(mine::get).filter(ref -> ref != null).toList();
     }
+
+    @Override
+    public Optional<com.uit.finance.modules.ledger.application.port.in.reference.AccountRef>
+        findAccount(UserId owner, UUID accountId) {
+      return Optional.empty();
+    }
   }
 }

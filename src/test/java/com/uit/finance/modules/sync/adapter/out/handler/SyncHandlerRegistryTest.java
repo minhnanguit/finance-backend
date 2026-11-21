@@ -228,7 +228,7 @@ class SyncHandlerRegistryTest {
   void unknownEntity() {
     SyncHandlerRegistry registry = new SyncHandlerRegistry(List.of(handler("account")));
 
-    assertThat(registry.supports("recurring")).isFalse();
-    assertThat(registry.current(ANN, "recurring", UUID.randomUUID())).isEmpty();
+    assertThat(registry.supports("goal")).isFalse();
+    assertThat(registry.current(ANN, "goal", UUID.randomUUID())).isEmpty();
   }
 }

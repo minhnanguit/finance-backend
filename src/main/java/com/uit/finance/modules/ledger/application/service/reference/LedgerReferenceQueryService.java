@@ -1,8 +1,11 @@
 package com.uit.finance.modules.ledger.application.service.reference;
 
+import com.uit.finance.modules.ledger.application.port.in.reference.AccountRef;
 import com.uit.finance.modules.ledger.application.port.in.reference.CategoryRef;
 import com.uit.finance.modules.ledger.application.port.in.reference.LedgerReferenceQuery;
+import com.uit.finance.modules.ledger.application.port.out.account.LoadAccountPort;
 import com.uit.finance.modules.ledger.application.port.out.category.LoadCategoryPort;
+import com.uit.finance.modules.ledger.domain.model.account.AccountId;
 import com.uit.finance.modules.ledger.domain.model.category.CategoryId;
 import com.uit.finance.shared.kernel.UserId;
 import java.util.List;
@@ -17,9 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 class LedgerReferenceQueryService implements LedgerReferenceQuery {
 
   private final LoadCategoryPort loadCategory;
+  private final LoadAccountPort loadAccount;
 
-  LedgerReferenceQueryService(LoadCategoryPort loadCategory) {
+  LedgerReferenceQueryService(LoadCategoryPort loadCategory, LoadAccountPort loadAccount) {
     this.loadCategory = loadCategory;
+    this.loadAccount = loadAccount;
+  }
+
+  @Override
+  public Optional<AccountRef> findAccount(UserId owner, UUID accountId) {
+    return loadAccount.find(owner, new AccountId(accountId)).map(AccountRef::from);
   }
 
   @Override
