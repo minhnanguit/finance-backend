@@ -49,6 +49,7 @@ chứng chỉ.
 | 1. Cài Docker, mở 80/443 trong máy, múi giờ, cron backup (`deploy/server-bootstrap.sh`) | `make srv-setup` |
 | 2. Chép `Makefile` + `deploy/` lên (chưa có mã nguồn, chỉ để có mẫu `.env.prod`) | `make srv-sync` |
 | 3. Sinh secret + mở `.env.prod` để dán SMTP Brevo | `make srv-env DOMAIN=<domain>` |
+| 3b. Dán / đổi SMTP key Brevo: thử đăng nhập Brevo trước, đúng mới lưu + áp vào Keycloak | `make srv-smtp-key` |
 | 4. Tạo SSH key riêng cho CI, cài lên server, nạp 4 secret `DEPLOY_*` vào repo (cần `gh auth login`) | `make srv-ci` |
 | 5. Deploy lần đầu | Đẩy tag, hoặc `make srv-deploy TAG=<tag đã có image>` |
 
