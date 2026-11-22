@@ -15,7 +15,7 @@ endif
 
 .DEFAULT_GOAL := help
 .PHONY: help up down reset ps logs run health swagger rabbit kc kc-db mail tunnel tunnel-off tunnel-url test itest build fmt lint api clean \
-        prod-secrets prod-up prod-down prod-ps prod-logs prod-health prod-backup \
+        prod-secrets prod-up prod-realm prod-down prod-ps prod-logs prod-health prod-backup \
         srv-setup srv-sync srv-env srv-smtp-key srv-ci srv-deploy srv-logs srv-admin
 
 help: ## Liệt kê mọi lệnh make của repo này
@@ -110,6 +110,9 @@ prod-up: ## [Mac] Thử stack production tại chỗ: build image từ mã ngu�
 	IMAGE_TAG=local $(COMPOSE_PROD) up -d --build --wait
 	IMAGE_TAG=local $(COMPOSE_PROD) run --rm keycloak-config
 
+prod-realm: ## [server] Đồng bộ realm Keycloak với deploy/.env.prod (theme, client, SMTP) — chạy sau khi đổi SMTP
+	$(COMPOSE_PROD) run --rm keycloak-config
+
 prod-down: ## [server] Tắt stack production, GIỮ dữ liệu
 	$(COMPOSE_PROD) down
 
@@ -154,11 +157,10 @@ srv-env: ## [Mac→server] Tạo (nếu chưa có) rồi mở deploy/.env.prod t
 	ssh -t $(SRV) 'cd $(SRV_DIR) && { test -f deploy/.env.prod || make -s prod-secrets; } \
 	  && sed -i "s/^DOMAIN=$$/DOMAIN=$(DOMAIN)/" deploy/.env.prod && nano deploy/.env.prod'
 
-srv-smtp-key: ## [Mac→server] Dán SMTP key Brevo (không hiện trên màn hình) vào deploy/.env.prod trên server
-	@printf 'Dán SMTP key Brevo rồi Enter (không hiện ra): '; stty -echo; read -r key; stty echo; echo; \
-	  test -n "$$key" || { echo "Key rỗng — không đổi gì."; exit 1; }; \
-	  printf '%s' "$$key" | ssh $(SRV) 'cd $(SRV_DIR) && k=$$(cat) && sed -i "s|^SMTP_PASSWORD=.*|SMTP_PASSWORD=$$k|" deploy/.env.prod \
-	    && grep -q "^SMTP_PASSWORD=." deploy/.env.prod && echo "✅ Đã lưu SMTP key vào deploy/.env.prod trên server."'
+srv-smtp-key: ## [Mac→server] Dán SMTP key Brevo (không hiện ra) — thử đăng nhập Brevo, đúng mới lưu + áp vào Keycloak
+	@printf 'Dán SMTP KEY Brevo (xsmtpsib-…, KHÔNG phải câu lệnh) rồi Enter — không hiện ra màn hình: '; \
+	  stty -echo; read -r key; stty echo; echo; \
+	  printf '%s\n' "$$key" | ssh $(SRV) 'cd $(SRV_DIR) && deploy/smtp-key.sh'
 
 srv-ci: ## [Mac→server+GitHub] Một lần: tạo SSH key riêng cho CI, cài lên server, nạp 4 secret DEPLOY_* (cần gh auth login)
 	@test -f $(CI_KEY) || ssh-keygen -q -t ed25519 -N '' -C finance-ci-deploy -f $(CI_KEY)
