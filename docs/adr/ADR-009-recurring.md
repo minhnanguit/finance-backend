@@ -1,6 +1,6 @@
 # ADR-009 – Khoản định kỳ
 
-**Status:** proposed · 2026-11-10 · chờ review lần 1 · triển khai theo `RECURRING-PLAN.md` v2 (root repo) Phase 1–8
+**Status:** accepted · 2026-11-10 · review 2026-11-23 · triển khai `RECURRING-PLAN.md` (root repo), có các điểm đơn giản hoá ghi ở mục "Khác plan"
 
 ## Context
 
@@ -100,7 +100,7 @@ recurring_revisions   id, recurring_id, effective_from, anchor_date,
 
 | Cột / ràng buộc | Luật |
 |---|---|
-| `recurrings.id`, `recurring_revisions.id` | UUIDv4 do **client** sinh |
+| `recurrings.id`, `recurring_revisions.id` | UUIDv4 do **client** sinh. Khoá chính `recurring_revisions` là `(recurring_id, id)` (V13): id phiên bản chỉ cần duy nhất trong một khoản, id trùng giữa hai khoản không làm op kẹt RETRY |
 | `revision` | `BIGINT NOT NULL`, số CAS của aggregate (§5 RS8). Khác `version` (optimistic lock của JPA) |
 | `type` | `CHECK (type IN ('EXPENSE','INCOME'))` |
 | `currency` | `VARCHAR(3)`, `CHECK (currency ~ '^[A-Z]{3}$')` |
@@ -116,7 +116,7 @@ recurring_revisions   id, recurring_id, effective_from, anchor_date,
 | Unique | `(recurring_id, effective_from)` |
 | Index | `(user_id, change_seq)` UNIQUE cho pull · `(recurring_id)` |
 
-Migration: `V12__recurring.sql` (V8–V11 đã thuộc vòng đời tài khoản, ADR-008).
+Migration: `V12__recurring.sql` (V8–V11 đã thuộc vòng đời tài khoản, ADR-008), `V13__recurring_revision_pk.sql`.
 
 ### 5. Sync (RS1–RS15)
 
@@ -131,7 +131,7 @@ Migration: `V12__recurring.sql` (V8–V11 đã thuộc vòng đời tài khoản
 | RS7 | Op `CREATE` giao dịch ghi `outbox_ref` tới ví, danh mục **và recurring** | Không gửi kỳ trước khi khoản vừa tạo lên server |
 | RS8 | **CAS:** `RecurringData.revision` trong op là **revision client dựa vào** (tạo mới = 0). Server khác `recurrings.revision` → `CONFLICT recurring.revision_conflict` + `current`; bằng → áp và tăng `revision` đúng 1. Trong pull, `revision` là giá trị hiện tại | Không LWW cho lịch: 2 máy sửa đua nhau đúng 1 thắng |
 | RS9 | Mobile: op recurring **không gộp**; mỗi lần ghi local lấy `revision` = revision server đã biết + số op recurring của khoản còn chờ | 2 lần sửa offline liên tiếp lên đúng thứ tự |
-| RS10 | `revision_conflict`: mobile bỏ bản sửa local, lấy bản server, báo user xem lại. Không tự gửi lại, không tự trộn | Đơn giản, minh bạch |
+| RS10 | `revision_conflict`: mobile bỏ các op **sửa** (UPSERT) còn chờ của khoản, lấy bản server, báo user xem lại. Op `DELETE` đang chờ **được giữ** và gửi tiếp. Không tự gửi lại, không tự trộn | Đơn giản, minh bạch; xoá luôn thắng (ADR-002 S4) |
 | RS11 | **Server kiểm timeline** với "hôm nay" = ngày UTC của `Clock` (`T`), dung sai 1 ngày cho múi giờ lệch UTC: phiên bản có `effective_from < T − 1` phải giống hệt bản đã lưu; phiên bản thêm/sửa có `effective_from ∈ [T − 1, T + 366]`. **Tạo mới** được phép 1+ phiên bản với `effective_from ∈ [2000-01-01, T + 366]` | Luật R10 chặn ở server, cho phép tạo khoản bắt đầu trong quá khứ |
 | RS12 | `generation_not_before` chỉ tăng, giá trị mới `≤ T + 1`. `generation_end_date` chỉ giảm, không gỡ về null, giá trị mới `≥ T − 1` (có thể nhỏ hơn kỳ đầu = huỷ) | R8, R11 |
 | RS13 | Tham chiếu (ví, danh mục) chỉ kiểm cho phiên bản **thêm hoặc sửa**. Phiên bản cũ được phép trỏ tới ví/danh mục đã archive/xoá | Lịch sử không bị chặn vì dữ liệu ledger đổi sau này |
@@ -172,7 +172,7 @@ Gửi lại đúng dữ liệu đang có với `revision` cũ hơn 1 (client m�
 | `remind_days_before` | null (tắt) hoặc 0–7 |
 | `revisions` | 1–50 mỗi khoản, `effective_from` tăng dần, không trùng |
 | Ngày | từ 2000-01-01; cửa sổ ở RS11, RS12 |
-| Mỗi user | ≤ 200 khoản **còn hiệu lực** (chưa xoá và `generation_end_date` null hoặc `≥ T − 1`). Đếm dưới khoá user |
+| Mỗi user | ≤ 200 khoản **còn hiệu lực** (chưa xoá và `generation_end_date` null hoặc `≥ T − 1`) và ≤ 2.000 khoản **chưa xoá** (kể cả đã kết thúc). Đếm dưới khoá user |
 
 Domain là nguồn sự thật (trả mã lỗi); `CHECK` trong DB là lớp chặn thứ hai.
 
@@ -246,9 +246,23 @@ sync: CREATE                                     chung, trong ApplyOpService
 - Ranh giới "đã hiệu lực" dung sai 1 ngày quanh UTC (RS11). Trong ngày dung sai, máy ở múi giờ lệch có thể sửa được phiên bản vừa bắt đầu hôm qua theo giờ của nó.
 - Không tạm dừng, không múi giờ riêng cho khoản, không TRANSFER/DAILY.
 - `revision_conflict` bỏ bản sửa local; user phải sửa lại. Khi cần: kho lưu "đề xuất" phía máy.
-- **Plan #14 (dọn tombstone) phải giữ tombstone của `recurrings` và của giao dịch có id sinh theo §2**, nếu không kỳ đã bỏ qua có thể quay lại. Cách đơn giản: không dọn tombstone `transactions` có id thuộc tập UUIDv5 của các khoản của user (tính lại được), hoặc giữ bảng dấu id tối thiểu.
-- Xoá tài khoản chưa xoá dữ liệu recurring: thuộc plan #14, như budget.
+- Kỳ đã bỏ qua không quay lại nhờ tombstone + `CREATE`, **trong cửa sổ 90 ngày**: tombstone giữ ≥ 92 ngày (`SyncProperties.MIN_TOMBSTONE_RETENTION`, app không khởi động nếu cấu hình ngắn hơn), còn app chỉ sinh kỳ trong 90 ngày gần nhất (R7). Ngoại lệ đã biết: một máy giữ nháp **chưa gửi** quá 92 ngày (offline lâu) rồi mới gửi `CREATE`, sau khi tombstone của lần bỏ qua ở máy khác đã bị dọn → nháp quay lại, user bỏ qua lần nữa. Không ảnh hưởng số dư.
+- Xoá tài khoản xoá luôn dữ liệu recurring (`RecurringUserDeletedListener`).
 - Server không tự sinh: user không mở app thì không có giao dịch (thông báo cục bộ vẫn nhắc).
+
+## Khác `RECURRING-PLAN.md` (chốt khi review 2026-11-23)
+
+Chọn hướng ít bảng/ít cơ chế hơn, mở rộng được về sau; mỗi điểm ghi lại cam kết bị thu hẹp.
+
+| Plan | ADR này | Lý do / cam kết thay đổi |
+|---|---|---|
+| Mục 6: bảng dấu xoá `recurring_deleted`, `ledger_recurring_deleted_transaction` giữ tới khi xoá tài khoản | Không có bảng dấu xoá. Tombstone theo retention chung, tối thiểu 92 ngày > cửa sổ 90 ngày | Dữ liệu không phình theo số lần xoá trong cả vòng đời tài khoản; ledger giữ nguyên. Cam kết "không hồi sinh" chỉ còn trong cửa sổ 90 ngày (Consequences) |
+| Mục 5.3: cột nguồn `source_recurring_id`, `source_revision_id`, `scheduled_date` trên giao dịch + SPI guard + `recurring.invalid_occurrence` | Ledger và contract ledger không đổi; nguồn gốc tính lại bằng UUIDv5; mobile có `recurring_occurrence_local` | Không đổi ledger hai phía, không lo tương thích app cũ. Server không chặn kỳ sinh từ lịch cũ (plan 5.4): chỉ máy sinh ra kỳ đó gắn "Cần kiểm tra" (R16) |
+| Mục 4.2: múi giờ IANA riêng mỗi khoản | Múi giờ máy (R6) | User ở một múi giờ; thêm cột về sau không phá dữ liệu cũ |
+| Mục 5.1: giữ bản sửa của user làm "đề xuất" khi `revision_conflict` | Bỏ bản sửa local, giữ op `DELETE` đang chờ (RS10) | Trường hợp hiếm; xoá vẫn luôn thắng (ADR-002 S4) |
+| Mục 7.1: `record_from`, `reminder_local_time` | Không có; nhắc lúc 09:00 | Chưa có UI cần tới |
+| Mục 7.2: 128 phiên bản/khoản, payload ≤ 64 KiB | 50 phiên bản/khoản (payload tự bị chặn theo đó) | Chặt hơn plan |
+| Mục 9: iOS `BGAppRefreshTask` | Chỉ Android chạy nền; iOS sinh kỳ khi mở app | Plan coi chạy nền là best-effort, mở app luôn bù |
 
 ## References
 

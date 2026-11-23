@@ -125,6 +125,16 @@ class RecurringPersistenceAdapter
   }
 
   @Override
+  public long countStored(UserId owner) {
+    Long count =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM recurrings WHERE user_id = :userId AND deleted_at IS NULL",
+            new MapSqlParameterSource().addValue("userId", owner.value(), Types.OTHER),
+            Long.class);
+    return count == null ? 0 : count;
+  }
+
+  @Override
   public long countActive(UserId owner, LocalDate endsNotBefore) {
     Long count =
         jdbc.queryForObject(

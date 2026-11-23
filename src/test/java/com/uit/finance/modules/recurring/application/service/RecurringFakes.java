@@ -61,6 +61,11 @@ final class RecurringFakes {
     }
 
     @Override
+    public long countStored(UserId owner) {
+      return rows.values().stream().filter(r -> r.isOwnedBy(owner) && !r.isDeleted()).count();
+    }
+
+    @Override
     public long countActive(UserId owner, LocalDate endsNotBefore) {
       return rows.values().stream()
           .filter(r -> r.isOwnedBy(owner) && !r.isDeleted())

@@ -512,12 +512,41 @@ class RecurringSyncApiIT {
     tx.put("occurredOn", TODAY.toString());
     tx.put("payee", "Tiền nhà");
 
-    JsonNode fromA = pushOne(ann.user(), op("transaction", occurrence, "CREATE", tx));
+    Map<String, Object> createA = op("transaction", occurrence, "CREATE", tx);
+    JsonNode fromA = pushOne(ann.user(), createA);
+    // Mất response rồi gửi lại đúng op (cùng opId): DUPLICATE kèm current, không thành CONFLICT
+    // giả.
+    JsonNode retryA = pushOne(ann.user(), createA);
     JsonNode fromB = pushOne(ann.user(), op("transaction", occurrence, "CREATE", tx));
 
     assertThat(outcome(fromA)).isEqualTo("APPLIED");
+    assertThat(outcome(retryA)).isEqualTo("DUPLICATE");
+    assertThat(retryA.get("current").get("id").asText()).isEqualTo(occurrence.toString());
     assertThat(outcome(fromB)).isEqualTo("CONFLICT");
     assertThat(code(fromB)).isEqualTo("sync.already_exists");
+  }
+
+  @Test
+  @DisplayName("hai khoản dùng chung một id phiên bản (id do client sinh) → cả hai APPLIED")
+  void revisionIdsAreScopedToTheirRecurring() {
+    Ledger ann = ledger();
+    UUID revisionId = UUID.randomUUID();
+    List<Map<String, Object>> timeline =
+        List.of(
+            monthlyRevision(
+                revisionId, TODAY.minusMonths(1), ann.vnd(), ann.expense(), 3_000_000, 5));
+
+    JsonNode first =
+        pushOne(
+            ann.user(),
+            upsertRecurring(UUID.randomUUID(), recurringData("EXPENSE", "VND", 0, timeline)));
+    JsonNode second =
+        pushOne(
+            ann.user(),
+            upsertRecurring(UUID.randomUUID(), recurringData("EXPENSE", "VND", 0, timeline)));
+
+    assertThat(outcome(first)).as(first.toString()).isEqualTo("APPLIED");
+    assertThat(outcome(second)).as(second.toString()).isEqualTo("APPLIED");
   }
 
   @Test

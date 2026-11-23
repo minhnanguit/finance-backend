@@ -69,6 +69,9 @@ class CreateRecurringService implements CreateRecurringUseCase {
             >= RecurringLimits.MAX_ACTIVE_PER_USER) {
       throw new RecurringLimitReachedException(RecurringLimits.MAX_ACTIVE_PER_USER);
     }
+    if (count.countStored(owner) >= RecurringLimits.MAX_STORED_PER_USER) {
+      throw new RecurringLimitReachedException(RecurringLimits.MAX_STORED_PER_USER);
+    }
     // Bản của chính user đã được đọc dưới khoá ở trên: insert thua chỉ có thể là id của người khác.
     if (!save.insertIfAbsent(owner, recurring)) {
       throw new RecurringNotFoundException(id.value());

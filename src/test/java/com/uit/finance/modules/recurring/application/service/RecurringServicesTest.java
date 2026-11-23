@@ -159,6 +159,19 @@ class RecurringServicesTest {
   }
 
   @Test
+  @DisplayName("tạo khi đã có 2.000 khoản chưa xoá (kể cả đã kết thúc) → limit_reached")
+  void limitCountsStoredRecurrings() {
+    LocalDate ended = TODAY.minusDays(10);
+    for (int i = 0; i < RecurringLimits.MAX_STORED_PER_USER; i++) {
+      create.create(
+          new CreateRecurringCommand(ANN, UUID.randomUUID(), fields(0, List.of(first()), ended)));
+    }
+
+    assertThatThrownBy(() -> createRent(UUID.randomUUID(), first()))
+        .isInstanceOf(RecurringLimitReachedException.class);
+  }
+
+  @Test
   @DisplayName("sửa với revision cũ → revision_conflict; với revision đúng → tăng 1")
   void updateIsConditional() {
     UUID id = UUID.randomUUID();

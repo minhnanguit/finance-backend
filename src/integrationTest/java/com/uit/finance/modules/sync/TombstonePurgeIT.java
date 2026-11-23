@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.uit.finance.ApiClient;
 import com.uit.finance.TestIdentityProvider;
 import com.uit.finance.TestcontainersConfiguration;
+import com.uit.finance.modules.sync.adapter.config.SyncProperties;
 import com.uit.finance.modules.sync.application.port.in.PurgeTombstonesUseCase;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +39,7 @@ class TombstonePurgeIT {
 
   private static final String PUSH = "/api/v1/sync/push";
   private static final String TODAY = LocalDate.now(ZoneOffset.UTC).toString();
-  private static final Duration RETENTION = Duration.ofDays(90);
+  private static final Duration RETENTION = SyncProperties.MIN_TOMBSTONE_RETENTION;
 
   @LocalServerPort int port;
   @Autowired JdbcClient jdbc;
@@ -166,7 +167,7 @@ class TombstonePurgeIT {
         .orElseThrow();
   }
 
-  /** Lùi {@code deleted_at} 100 ngày để tombstone quá hạn giữ 90 ngày. */
+  /** Lùi {@code deleted_at} 100 ngày để tombstone quá hạn giữ 92 ngày. */
   private void ageTombstone(String table, UUID id) {
     jdbc.sql("UPDATE " + table + " SET deleted_at = now() - interval '100 days' WHERE id = :id")
         .param("id", id)

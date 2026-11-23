@@ -10,4 +10,7 @@ public interface RecurringCountPort {
    * từ {@code endsNotBefore} trở đi.
    */
   long countActive(UserId owner, LocalDate endsNotBefore);
+
+  /** Số khoản chưa xoá của user, kể cả đã kết thúc (ADR-009 §7). */
+  long countStored(UserId owner);
 }

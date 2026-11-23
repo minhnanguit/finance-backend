@@ -12,6 +12,12 @@ public final class RecurringLimits {
   public static final int MAX_REMIND_DAYS = 7;
   public static final int MAX_REVISIONS = 50;
   public static final int MAX_ACTIVE_PER_USER = 200;
+
+  /**
+   * Mọi khoản chưa xoá, kể cả đã kết thúc: chặn tạo vô hạn khoản đã kết thúc (RECURRING-PLAN 7.2).
+   */
+  public static final int MAX_STORED_PER_USER = 2_000;
+
   public static final LocalDate MIN_DATE = LocalDate.of(2000, 1, 1);
 
   /** Ngày xa nhất so với hôm nay (UTC) cho {@code effectiveFrom}. */
