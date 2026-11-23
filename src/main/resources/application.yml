@@ -135,8 +135,9 @@ app:
   sync:
     op-log-retention: 30d
     op-log-purge-cron: "0 30 3 * * *"
-    # Tombstone giữ 90 ngày rồi xoá thật; máy giữ cursor cũ hơn nhận 410 sync.cursor_expired (ADR-008 T1–T5).
-    tombstone-retention: 90d
+    # Tombstone giữ 92 ngày rồi xoá thật; máy giữ cursor cũ hơn nhận 410 sync.cursor_expired (ADR-008 T1–T5).
+    # Tối thiểu 92 ngày = cửa sổ ghi bù 90 ngày của op CREATE + 2 ngày dung sai múi giờ (ADR-009 §3).
+    tombstone-retention: 92d
     tombstone-purge-cron: "0 45 3 * * *"
   # Event đã gửi (archive) và dấu chống trùng của consumer: xoá sau 30 ngày, vì archive giữ cả payload có
   # dữ liệu cá nhân (email trong identity.user.registered) — ADR-008.

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.uit.finance.ApiClient;
 import com.uit.finance.TestIdentityProvider;
 import com.uit.finance.TestcontainersConfiguration;
+import com.uit.finance.modules.sync.adapter.config.SyncProperties;
 import com.uit.finance.modules.sync.application.port.in.PurgeTombstonesUseCase;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +39,7 @@ class TombstonePurgeIT {
 
   private static final String PUSH = "/api/v1/sync/push";
   private static final String TODAY = LocalDate.now(ZoneOffset.UTC).toString();
-  private static final Duration RETENTION = Duration.ofDays(90);
+  private static final Duration RETENTION = SyncProperties.MIN_TOMBSTONE_RETENTION;
 
   @LocalServerPort int port;
   @Autowired JdbcClient jdbc;
@@ -166,7 +167,7 @@ class TombstonePurgeIT {
         .orElseThrow();
   }
 
-  /** Lùi {@code deleted_at} 100 ngày để tombstone quá hạn giữ 90 ngày. */
+  /** Lùi {@code deleted_at} 100 ngày để tombstone quá hạn giữ 92 ngày. */
   private void ageTombstone(String table, UUID id) {
     jdbc.sql("UPDATE " + table + " SET deleted_at = now() - interval '100 days' WHERE id = :id")
         .param("id", id)
@@ -311,5 +312,60 @@ class TombstonePurgeIT {
     assertThat(pull(user, offlineCursor, 100).getStatusCode().value()).isEqualTo(410);
     // Đã dọn thì tạo lại ngân sách cho cùng danh mục vẫn được (không vướng unique index).
     pushOk(user, budget(UUID.randomUUID(), food));
+  }
+
+  @Test
+  @DisplayName("tombstone khoản định kỳ quá hạn được dọn cùng job, timeline đi theo")
+  void recurringTombstonesArePurgedToo() {
+    User user = newUser();
+    UUID food = foodCategory(user);
+    UUID wallet = UUID.randomUUID();
+    pushOk(user, account(wallet));
+    UUID gone = UUID.randomUUID();
+    pushOk(user, recurring(gone, wallet, food));
+    String offlineCursor = pullAll(user, null, 500).cursors().getLast();
+    pushOk(user, delete("recurring", gone));
+    long tombstoneSeq = changeSeq("recurrings", gone);
+    ageTombstone("recurrings", gone);
+
+    runPurge();
+
+    assertThat(exists("recurrings", gone)).isFalse();
+    long revisions =
+        jdbc.sql("SELECT count(*) FROM recurring_revisions WHERE recurring_id = :id")
+            .param("id", gone)
+            .query(Long.class)
+            .single();
+    assertThat(revisions).isZero();
+    assertThat(purgedThrough(user)).isEqualTo(tombstoneSeq);
+    assertThat(pull(user, offlineCursor, 100).getStatusCode().value()).isEqualTo(410);
+  }
+
+  private static Map<String, Object> recurring(UUID id, UUID account, UUID category) {
+    String from = LocalDate.now(ZoneOffset.UTC).minusMonths(1).toString();
+    Map<String, Object> revision = new LinkedHashMap<>();
+    revision.put("id", UUID.randomUUID().toString());
+    revision.put("effectiveFrom", from);
+    revision.put("anchorDate", from);
+    revision.put("accountId", account.toString());
+    revision.put("categoryId", category.toString());
+    revision.put("amountMinor", 3_000_000);
+    revision.put("note", null);
+    revision.put("frequency", "MONTHLY");
+    revision.put("interval", 1);
+    revision.put("weekday", null);
+    revision.put("month", null);
+    revision.put("dayOfMonth", 5);
+    revision.put("autoConfirm", false);
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("name", "Tiền nhà");
+    data.put("type", "EXPENSE");
+    data.put("currency", "VND");
+    data.put("generationNotBefore", from);
+    data.put("generationEndDate", null);
+    data.put("remindDaysBefore", null);
+    data.put("revision", 0);
+    data.put("revisions", List.of(revision));
+    return op("recurring", id, "UPSERT", data);
   }
 }

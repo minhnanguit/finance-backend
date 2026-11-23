@@ -40,7 +40,7 @@ quan sát được (đếm dòng chờ) và không phụ thuộc broker.
 | T1 | `sync` điều phối dọn tombstone quá 90 ngày qua SPI `SyncHandler`; mỗi module xoá bảng của mình. Mỗi owner một transaction, giữ khoá ghi của user (như push). Tombstone còn bị tombstone khác trỏ tới (ví ← giao dịch đã xoá) được dọn bằng cách **lặp tới khi một lượt không xoá thêm gì**: không phụ thuộc thứ tự handler, cả chuỗi xong trong một lần chạy |
 | T2 | `user_sync_state.purged_through_seq` = `change_seq` lớn nhất đã dọn (chỉ tăng) |
 | T3 | Cursor `<afterSeq>[.<floor>]`. Pull từ đầu nhận `floor = purged_through_seq`. Cursor có `purged_through_seq > max(afterSeq, floor)` → `410 sync.cursor_expired` (`ErrorCategory.GONE`) |
-| T5 | Giữ tombstone (90 ngày) ≥ giữ `sync_ops` (30 ngày), kiểm khi khởi động |
+| T5 | Giữ tombstone (92 ngày; tối thiểu 92 ngày từ ADR-009) ≥ giữ `sync_ops` (30 ngày), kiểm khi khởi động |
 | T6 | Xoá `event_publication` đã hoàn tất + `processed_events` quá 30 ngày, theo lô |
 
 ### Mobile

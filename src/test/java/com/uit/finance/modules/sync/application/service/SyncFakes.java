@@ -4,6 +4,7 @@ import com.uit.finance.modules.sync.application.port.out.OpLogPort;
 import com.uit.finance.modules.sync.application.port.out.SyncHandlersPort;
 import com.uit.finance.modules.sync.application.port.out.SyncStatePort;
 import com.uit.finance.modules.sync.domain.model.ChangeRecord;
+import com.uit.finance.modules.sync.domain.model.OpAction;
 import com.uit.finance.modules.sync.domain.model.OpLogEntry;
 import com.uit.finance.modules.sync.domain.model.OpOutcome;
 import com.uit.finance.modules.sync.domain.model.OpVerdict;
@@ -33,6 +34,12 @@ final class SyncFakes {
     Function<PushedOp, OpVerdict> verdicts = op -> OpVerdict.applied();
 
     final List<UUID> applied = new ArrayList<>();
+    final List<OpAction> receivedActions = new ArrayList<>();
+
+    /** true: mọi id của {@code account} đều "đã có". false: chỉ id đã được áp mới có. */
+    boolean everyIdExists = true;
+
+    final java.util.Set<UUID> stored = new java.util.HashSet<>();
     int initializations;
 
     @Override
@@ -42,16 +49,18 @@ final class SyncFakes {
 
     @Override
     public OpVerdict apply(UserId owner, PushedOp op) {
+      receivedActions.add(op.action());
       OpVerdict verdict = verdicts.apply(op);
       if (verdict.outcome() == OpOutcome.APPLIED) {
         applied.add(op.opId());
+        stored.add(op.entityId());
       }
       return verdict;
     }
 
     @Override
     public Optional<ChangeRecord> current(UserId owner, String entity, UUID id) {
-      return supports(entity)
+      return supports(entity) && (everyIdExists || stored.contains(id))
           ? Optional.of(new ChangeRecord(entity, id, 1, false, Map.of("name", "Ví")))
           : Optional.empty();
     }

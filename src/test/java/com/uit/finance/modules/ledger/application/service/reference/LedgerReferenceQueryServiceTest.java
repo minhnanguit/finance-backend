@@ -26,7 +26,7 @@ class LedgerReferenceQueryServiceTest {
   @BeforeEach
   void setUp() {
     store = new LedgerFakes.Store();
-    query = new LedgerReferenceQueryService(store);
+    query = new LedgerReferenceQueryService(store, store);
   }
 
   @Test
@@ -77,5 +77,20 @@ class LedgerReferenceQueryServiceTest {
                 ANN, Set.of(food.getId().value(), bobs.getId().value(), UUID.randomUUID())))
         .extracting(CategoryRef::id)
         .containsExactly(food.getId().value());
+  }
+
+  @Test
+  @DisplayName("ví: trả tiền tệ, archived, deleted; ví của user khác trả rỗng (B2)")
+  void exposesAccountState() {
+    var mine = com.uit.finance.modules.ledger.domain.model.LedgerFixtures.account(ANN, "VND");
+    var bobs = com.uit.finance.modules.ledger.domain.model.LedgerFixtures.account(BOB, "USD");
+    store.put(mine);
+    store.put(bobs);
+
+    assertThat(query.findAccount(ANN, mine.getId().value()))
+        .contains(
+            new com.uit.finance.modules.ledger.application.port.in.reference.AccountRef(
+                mine.getId().value(), "VND", false, false));
+    assertThat(query.findAccount(ANN, bobs.getId().value())).isEmpty();
   }
 }
